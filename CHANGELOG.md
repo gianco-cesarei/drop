@@ -18,6 +18,9 @@
 - **Doc**: `docs/WINDOWS_BUILD.md`. `.gitignore`: aggiunto `src-tauri/binaries/` (generati in CI).
 - **Nota**: verificati su Mac sintassi Python, JSON e YAML; la compilazione Windows va confermata dal primo run del workflow (richiede un remote GitHub, attualmente assente).
 
+### Release pubblica automatica
+- Il workflow ora, sui tag `v*`, pubblica una **GitHub Release** con l'installer allegato (`softprops/action-gh-release`, `permissions: contents: write`). Il link di download della Release è pubblico: un utente esterno scarica l'`.exe` senza account GitHub (l'artifact di Actions invece è scaricabile solo da utenti loggati con accesso al repo).
+
 ---
 
 ## 2026-07-24 (sessione — debug Spotify 403)

@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import time
 import tempfile
@@ -598,9 +599,33 @@ def get_file(job_id: str, background_tasks: BackgroundTasks):
     return FileResponse(fp, media_type=media_type, filename=filename)
 
 
+def _frontend_index_path() -> Path | None:
+    """Trova frontend/index.html sia in dev che nell'exe PyInstaller (frozen).
+
+    In modalità frozen (Windows/DMG impacchettato) i file sono estratti in
+    sys._MEIPASS e il layout relativo a __file__ non esiste. Proviamo più
+    posizioni candidate e restituiamo la prima esistente.
+    """
+    candidates = []
+    if getattr(sys, "frozen", False):
+        # PyInstaller: risorse estratte in _MEIPASS, e file accanto all'exe
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidates.append(Path(meipass) / "frontend" / "index.html")
+        candidates.append(Path(sys.executable).parent / "frontend" / "index.html")
+    # Dev / sorgente: backend/../frontend/index.html
+    candidates.append(Path(__file__).parent.parent / "frontend" / "index.html")
+    for p in candidates:
+        if p.is_file():
+            return p
+    return None
+
+
 @app.get("/")
 def serve_frontend():
-    html_path = Path(__file__).parent.parent / "frontend" / "index.html"
-    with open(html_path, "r") as f:
-        content = f.read()
+    html_path = _frontend_index_path()
+    if html_path is None:
+        logger.error("index.html non trovato (frozen=%s)", getattr(sys, "frozen", False))
+        raise HTTPException(status_code=500, detail="Frontend non trovato nell'installazione.")
+    content = html_path.read_text(encoding="utf-8")
     return HTMLResponse(content=content)

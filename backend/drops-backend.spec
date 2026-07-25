@@ -18,6 +18,12 @@ datas = []
 binaries = []
 hiddenimports = []
 
+# Impacchetta il frontend (index.html) dentro l'exe: a runtime viene estratto
+# in _MEIPASS/frontend/index.html e servito da serve_frontend().
+_frontend = os.path.join(BACKEND_DIR, "..", "frontend", "index.html")
+if os.path.isfile(_frontend):
+    datas += [(_frontend, "frontend")]
+
 # Raccogli tutto (moduli, dati, binari) dai pacchetti che caricano risorse a runtime
 for pkg in ("uvicorn", "yt_dlp", "fastapi", "pydantic", "anyio", "starlette"):
     _d, _b, _h = collect_all(pkg)
