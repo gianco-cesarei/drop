@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testo & Traduzione</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#8a8a8a; --line:#e6e6e6; --accent:#b8863b; --bg:#fbfaf7; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 24px 80px;
+    background: var(--bg); color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 40px; }
+  header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: .3px; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  .verse-title {
+    margin: 44px 0 18px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    font-size: 18px; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .rows { display: flex; flex-direction: column; gap: 2px; }
+  .row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+    padding: 7px 0; border-bottom: 1px solid var(--line);
+  }
+  .row:hover { background: #f2efe7; }
+  .orig { font-weight: 500; }
+  .trad { color: #4a4a4a; font-style: italic; }
+  .empty { min-height: 10px; }
+  .note {
+    max-width: 980px; margin: 30px auto 0; padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-family: -apple-system, sans-serif; font-size: 12px; color: var(--muted);
+    line-height: 1.6;
+  }
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; gap: 4px; }
+    .trad { padding-bottom: 4px; }
+  }
+  @media print {
+    body { background: #fff; }
+    .row:hover { background: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Testo &amp; Traduzione</h1>
+    <p>Originale (UK drill) · Traduzione in italiano — allineati verso per verso</p>
+  </header>
+
+  <div class="verse-title">Verse 1 — Young Adz</div>
+  <div class="rows">
+    <div class="row"><div class="orig">Yeah</div><div class="trad">Yeah</div></div>
+    <div class="row"><div class="orig">You got a target on your back when you're a artist</div><div class="trad">Hai un bersaglio sulla schiena quando sei un artista</div></div>
+    <div class="row"><div class="orig">Nowadays, these youngins do a drill and go use Smartwhips</div><div class="trad">Oggi 'sti ragazzini fanno violenza e poi si sballano col protossido d'azoto</div></div>
+    <div class="row"><div class="orig">My nigga turnin' strange but I just love the guy regardless</div><div class="trad">Il mio amico sta diventando strano ma gli voglio bene lo stesso</div></div>
+    <div class="row"><div class="orig">In a world full of lies, you say the truth, they label you the harshest</div><div class="trad">In un mondo pieno di bugie, se dici la verità ti bollano come il più cattivo</div></div>
+    <div class="row"><div class="orig">Sold my Lamborghini truck 'cause what's the point in ridin' 'round the fastest</div><div class="trad">Ho venduto il SUV Lamborghini: che senso ha girare con la più veloce</div></div>
+    <div class="row"><div class="orig">When all my friends are OTR or sittin' in the marshes?</div><div class="trad">quando tutti i miei amici sono latitanti o sepolti nelle paludi?</div></div>
+    <div class="row"><div class="orig">I know a nigga died a soldier 'cause he weren't the smartest</div><div class="trad">Conosco uno morto da soldato perché non era il più furbo</div></div>
+    <div class="row"><div class="orig">No fear, his mind didn't fail him but his heart did</div><div class="trad">Niente paura: la mente non l'ha tradito, ma il cuore sì</div></div>
+    <div class="row"><div class="orig">Bro, just keep it real, that's all I'm askin'</div><div class="trad">Fra', sii sincero, è tutto ciò che chiedo</div></div>
+    <div class="row"><div class="orig">Niggas do gangster shit and then go hide behind imams</div><div class="trad">Fanno cose da gangster e poi si nascondono dietro gli imam</div></div>
+    <div class="row"><div class="orig">I call big homie, he's tryna hash their qualms</div><div class="trad">Chiamo il big del quartiere, cerca di appianare i loro dissapori</div></div>
+    <div class="row"><div class="orig">I don't need to go to LA just to walk with guns</div><div class="trad">Non ho bisogno di andare a LA per girare armato</div></div>
+    <div class="row"><div class="orig">And I don't need to fly Dubai to go drive supercars</div><div class="trad">E non devo volare a Dubai per guidare supercar</div></div>
+    <div class="row"><div class="orig">Bro got grabbed before my show, I'm on stage forgettin' my bars now</div><div class="trad">Hanno arrestato il mio fra' prima del concerto, ora sul palco dimentico le rime</div></div>
+    <div class="row"><div class="orig">Time heals everything but they don't tell you that it's hard</div><div class="trad">Il tempo guarisce tutto, ma non ti dicono quanto è dura</div></div>
+    <div class="row"><div class="orig">When you got nerve damage or insecure 'bout your scars</div><div class="trad">quando hai danni ai nervi o sei insicuro per le cicatrici</div></div>
+    <div class="row"><div class="orig">I knew a nigga that was rich, he shitted on the trenches 'til it made him poor</div><div class="trad">Conoscevo uno ricco, disprezzava la strada finché non l'ha reso povero</div></div>
+    <div class="row"><div class="orig">Been puttin' batteries in backs and makin' niggas score</div><div class="trad">Ho caricato la gente e fatto fare colpi</div></div>
+    <div class="row"><div class="orig">When Wireless was in Crystal Palace, we bought out the Škorps</div><div class="trad">Quando il Wireless era a Crystal Palace, abbiamo comprato tutte le Škorpion</div></div>
+    <div class="row"><div class="orig">They killing girls in my city too, baby, please stay indoors</div><div class="trad">Ammazzano anche le ragazze nella mia città, tesoro, resta in casa</div></div>
+    <div class="row"><div class="orig">'Cause the sticks with the game</div><div class="trad">perché i ferri fanno parte del gioco</div></div>
+    <div class="row"><div class="orig">How you snake your dargy for a bitch and some chains?</div><div class="trad">Come fai a tradire il tuo amico per una tipa e qualche catena?</div></div>
+    <div class="row"><div class="orig">I told bro that he can have everything of mine but my wife</div><div class="trad">Ho detto al fra' che può avere tutto il mio, tranne mia moglie</div></div>
+    <div class="row"><div class="orig">If he weren't on the run, he'll rock a quarter mill' in ice</div><div class="trad">Se non fosse latitante, indosserebbe un quarto di milione in diamanti</div></div>
+    <div class="row"><div class="orig">One of my top juvie's lifed off, smokin' spice</div><div class="trad">Uno dei miei migliori compagni di riformatorio si è preso l'ergastolo, fumando spice</div></div>
+    <div class="row"><div class="orig">They think the back door's open, like we don't know that you're playin' both sides</div><div class="trad">Pensano che ci sia un infame, come se non sapessimo che fai il doppio gioco</div></div>
+    <div class="row"><div class="orig">Yeah right, this shit here's airtight</div><div class="trad">Ma certo, qui è tutto blindato</div></div>
+    <div class="row"><div class="orig">Keepin' real's a rare sight and I ain't seen no fair fight</div><div class="trad">Restare veri è raro e non ho mai visto una lotta leale</div></div>
+    <div class="row"><div class="orig">Before bro died, he was tryna reach me</div><div class="trad">Prima di morire, il mio fra' cercava di contattarmi</div></div>
+    <div class="row"><div class="orig">Fiends even tryna teach me</div><div class="trad">Persino i tossici provano a insegnarmi qualcosa</div></div>
+    <div class="row"><div class="orig">Pinnin' heroin and smokin' crack, dying from diabetes</div><div class="trad">Si bucano d'eroina e fumano crack, morendo di diabete</div></div>
+    <div class="row"><div class="orig">How can you relate when you ain't never had to go through faeces</div><div class="trad">Come puoi capire se non hai mai dovuto frugare tra le feci</div></div>
+    <div class="row"><div class="orig">To get the forty shots you swallowed?</div><div class="trad">per recuperare i quaranta ovuli di droga che hai ingoiato?</div></div>
+    <div class="row"><div class="orig">I run my trap like Putin, playin' old school dubs and hollow</div><div class="trad">Gestisco la mia piazza come Putin, tra dub old school e proiettili hollow point</div></div>
+    <div class="row"><div class="orig">This time's all borrowed, but the hammers ain't</div><div class="trad">Questo tempo è tutto in prestito, ma le pistole no</div></div>
+    <div class="row"><div class="orig">She took a half a gram and faint</div><div class="trad">Lei ha preso mezzo grammo ed è svenuta</div></div>
+    <div class="row"><div class="orig">The joint's got a laser what we brang to Tape</div><div class="trad">L'arma ha il mirino laser, quella che abbiamo portato al Tape</div></div>
+    <div class="row"><div class="orig">Now 29 rock the stage like we ain't really do two bag a day</div><div class="trad">Ora i 29 spaccano sul palco come se non spacciassimo davvero due sacchetti al giorno</div></div>
+  </div>
+
+  <div class="verse-title">Verse 2 — Catch</div>
+  <div class="rows">
+    <div class="row"><div class="orig">Cool</div><div class="trad">Cool</div></div>
+    <div class="row"><div class="orig">Hey, I sat on the back of PCXs</div><div class="trad">Ehi, stavo seduto dietro sugli scooter PCX</div></div>
+    <div class="row"><div class="orig">Before I ever sat with Dave talkin' 'bout DBXs</div><div class="trad">prima ancora di sedermi con Dave a parlare di Aston Martin DBX</div></div>
+    <div class="row"><div class="orig">I told this girl a hundred times, "I wanna read your texts</div><div class="trad">L'ho detto cento volte a 'sta ragazza: «Voglio leggere i tuoi messaggi</div></div>
+    <div class="row"><div class="orig">"I wanna press, I ain't pressed about your meady exes"</div><div class="trad">voglio insistere, non me ne frega niente dei tuoi ex»</div></div>
+    <div class="row"><div class="orig">And then I tell her, "Don't upload me"</div><div class="trad">E poi le dico: «Non postarmi sui social»</div></div>
+    <div class="row"><div class="orig">Man, the streets are reckless</div><div class="trad">Amico, la strada è spietata</div></div>
+    <div class="row"><div class="orig">The hammer on me like I tweak electrics</div><div class="trad">Ho la pistola addosso come se sistemassi impianti elettrici</div></div>
+    <div class="row"><div class="orig">I got the Škorp, you think these sweets selective?</div><div class="trad">Ho la Škorpion, pensi che 'ste caramelle (proiettili) facciano distinzioni?</div></div>
+    <div class="row"><div class="orig">So baby, please stay indoors, you think these sweets are sexist?</div><div class="trad">Quindi tesoro, resta in casa: pensi che 'ste caramelle siano sessiste?</div></div>
+    <div class="row"><div class="orig">How about you fasten up yourself?</div><div class="trad">Che ne dici di darti una mossa?</div></div>
+    <div class="row"><div class="orig">Tryna be on guest lists</div><div class="trad">a cercare di entrare nelle liste ospiti</div></div>
+    <div class="row"><div class="orig">Shake my head, the game is just a mess</div><div class="trad">Scuoto la testa, il gioco è solo un casino</div></div>
+    <div class="row"><div class="orig">I see these little boys struggling to pay off on their debts</div><div class="trad">Vedo 'sti ragazzini che faticano a saldare i debiti</div></div>
+    <div class="row"><div class="orig">And instead of flying straight with their connects, they make a rap song and claim it's a finesse</div><div class="trad">E invece di trattare pulito coi fornitori, fanno una canzone rap e la spacciano per una furbata</div></div>
+    <div class="row"><div class="orig">I'm just shaking up my head</div><div class="trad">Io continuo a scuotere la testa</div></div>
+    <div class="row"><div class="orig">I'm in, I'm in my local barbers taping up my dreads</div><div class="trad">Sono dal mio barbiere di zona che mi sistema i dread</div></div>
+    <div class="row"><div class="orig">I'll paint the road too, my barber knows, he makes sure that I'm next</div><div class="trad">Insanguino anche la strada, il mio barbiere lo sa, fa in modo che tocchi a me</div></div>
+    <div class="row"><div class="orig">Yes, life of a trap lord boss</div><div class="trad">Sì, vita da boss della piazza</div></div>
+    <div class="row"><div class="orig">With them niggas 'round you, you won't even know who the back door was</div><div class="trad">Con quei tizi intorno, non saprai nemmeno chi era l'infame</div></div>
+    <div class="row"><div class="orig">Yeah, Ross Kemp can get an interview, or Trap Lore Ross</div><div class="trad">Sì, Ross Kemp può avere un'intervista, o Trap Lore Ross (i documentaristi)</div></div>
+    <div class="row"><div class="orig">Even when I step into the trenches, then it's at your cost</div><div class="trad">Anche quando scendo in strada, è a tue spese</div></div>
+    <div class="row"><div class="orig">I ain't talkin' to no little man, I'll at your boss</div><div class="trad">Non parlo coi pesci piccoli, vado dritto dal tuo capo</div></div>
+    <div class="row"><div class="orig">I don't water nothin' down, if anything, I add more Voss</div><div class="trad">Non annacquo niente, semmai aggiungo altra Voss (acqua) — gioco di parole</div></div>
+    <div class="row"><div class="orig">Catch is on your playlist, like</div><div class="trad">Catch è nella tua playlist, tipo</div></div>
+    <div class="row"><div class="orig">Like I wasn't on a mattress with a makeshift knife</div><div class="trad">come se non fossi stato su un materasso con un coltello artigianale</div></div>
+    <div class="row"><div class="orig">Practise 'til I make it right</div><div class="trad">Mi esercito finché non lo faccio bene</div></div>
+    <div class="row"><div class="orig">You really think they'll reform me? You're mad</div><div class="trad">Pensi davvero che mi riabiliteranno? Sei pazzo</div></div>
+    <div class="row"><div class="orig">I still get nightmares of them recalling me back</div><div class="trad">Ho ancora incubi in cui mi richiamano dentro (in carcere)</div></div>
+    <div class="row"><div class="orig">And I get PTSD whenever we all in a bank</div><div class="trad">E mi viene lo stress post-traumatico ogni volta che siamo in cella</div></div>
+    <div class="row"><div class="orig">'Cause my last bank I had us take a sweetcorn in for pack</div><div class="trad">perché nell'ultima cella ci feci portare del mais dolce per nascondere la roba</div></div>
+    <div class="row"><div class="orig">Yuck</div><div class="trad">Che schifo</div></div>
+    <div class="row"><div class="orig">TMI made me, now I'm a rapper so it's EGA or EMI, crazy</div><div class="trad">La TMI mi ha creato, ora sono un rapper quindi è EGA o EMI, assurdo (etichette)</div></div>
+    <div class="row"><div class="orig">And way before 29 made moves on wave tunes</div><div class="trad">E molto prima che i 29 facessero mosse su pezzi wave</div></div>
+    <div class="row"><div class="orig">I saw him making it snow, bro, and it was late June</div><div class="trad">l'ho visto far nevicare (spacciare coca), fra', ed era fine giugno</div></div>
+    <div class="row"><div class="orig">Think them bando days leave your brain?</div><div class="trad">Pensi che i giorni nella casa dello spaccio ti escano dalla testa?</div></div>
+    <div class="row"><div class="orig">You ever seen a fiend get excited when they see your vein?</div><div class="trad">Hai mai visto un tossico eccitarsi quando vede la tua vena?</div></div>
+  </div>
+
+  <div class="note">
+    Nota: testo di UK drill, pieno di slang e riferimenti gergali (armi, strada, carcere, droga). La traduzione punta al <em>senso</em> più che alla lettera; alcune espressioni (es. "back door" = infame/talpa, "make it snow" = spacciare coca, "sweets" = proiettili) sono rese in italiano corrente con brevi chiose tra parentesi dove serve.
+  </div>
+</div>
+</body>
+</html>

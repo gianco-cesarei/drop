@@ -45,3 +45,12 @@ con permessi di scrittura ai workflow).
 ## Note
 - Artifact di Actions = solo per te (loggato). Per gli utenti esterni serve la Release.
 - App non firmata → SmartScreen al primo avvio ("Ulteriori informazioni" → "Esegui comunque").
+
+## macOS (.dmg)
+Lo stesso tag `vX.Y.Z` costruisce anche il `.dmg` Mac (job `build-macos`, runner
+Intel `macos-13`: gira su tutti i Mac, su Apple Silicon via Rosetta) e lo allega
+alla stessa Release. L'app è firmata **ad-hoc** (gratis, non notarizzata):
+- Primo avvio: l'utente installa trascinando in Applicazioni, poi apre con
+  **tasto destro → Apri** (Gatekeeper). Se resta bloccata: `xattr -dr com.apple.quarantine /Applications/Drops.app`.
+- Per una distribuzione senza avvisi servirebbe un Apple Developer ID + notarizzazione (99$/anno).
+- ffmpeg per Mac: build statica Intel da evermeet.cx.

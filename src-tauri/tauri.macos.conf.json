@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "resources": {
+      "binaries/drops-backend": "drops-backend",
+      "binaries/ffmpeg": "ffmpeg/ffmpeg"
+    },
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}

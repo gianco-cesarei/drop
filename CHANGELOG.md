@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-07-25 (v1.2.0 — supporto macOS)
+
+### Distribuzione macOS (.dmg)
+- **`src-tauri/src/main.rs`**: su macOS avvia il backend Mach-O impacchettato nell'`.app` (risorse, con `chmod +x` a runtime), con fallback al venv Python del progetto in modalità sviluppo. Import `Manager` esteso a windows+macos.
+- **`src-tauri/tauri.macos.conf.json`**: risorse `drops-backend` + `ffmpeg/ffmpeg`, firma **ad-hoc** (`macOS.signingIdentity: "-"`) per non far uccidere il backend interno da Gatekeeper, `minimumSystemVersion 10.15`.
+- **CI** (`.github/workflows/windows-build.yml`, ora "Build Drops (Windows + macOS)"): nuovo job `build-macos` su runner **Intel `macos-13`** — PyInstaller (Mach-O), ffmpeg Intel statico (evermeet.cx), smoke test UI/health, `tauri build --bundles dmg`, upload artifact e allegato alla stessa Release sui tag. Il `.dmg` gira su tutti i Mac (Apple Silicon via Rosetta).
+- App non notarizzata: primo avvio con **tasto destro → Apri**. Runbook aggiornato in `docs/RELEASE.md`.
+
+---
+
 ## 2026-07-25 (v1.1.0 — fix installer Windows: UI non caricava)
 
 ### Fix: frontend non impacchettato nell'exe Windows

@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri::Manager;
 
 /// Aspetta che il backend risponda sulla porta 8000 (max ~18s).
@@ -22,7 +22,8 @@ fn wait_for_backend(attempts: u32) {
 /// Avvia il backend FastAPI. La strategia dipende dalla piattaforma:
 /// - Windows: esegue il backend impacchettato (`drops-backend.exe`) dalle risorse
 ///   dell'app, passando la cartella di ffmpeg via DROPS_FFMPEG_DIR.
-/// - macOS: comportamento storico (venv Python del progetto in ~/Documents/...).
+/// - macOS: backend Mach-O impacchettato nell'.app se presente, altrimenti
+///   fallback al venv Python del progetto (modalità sviluppo).
 #[allow(unused_variables)]
 fn spawn_backend(app: &tauri::App) -> Option<Child> {
     #[cfg(target_os = "windows")]
@@ -51,6 +52,33 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
 
     #[cfg(target_os = "macos")]
     {
+        // 1) App impacchettata (.dmg): backend Mach-O dentro le risorse dell'.app
+        if let Ok(res) = app.path().resource_dir() {
+            let backend = res.join("drops-backend");
+            if backend.exists() {
+                let ffmpeg_dir = res.join("ffmpeg");
+                // Le risorse impacchettate possono perdere il bit di esecuzione:
+                // lo riforziamo prima di lanciarle.
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let _ = std::fs::set_permissions(
+                        &backend,
+                        std::fs::Permissions::from_mode(0o755),
+                    );
+                    let _ = std::fs::set_permissions(
+                        ffmpeg_dir.join("ffmpeg"),
+                        std::fs::Permissions::from_mode(0o755),
+                    );
+                }
+                return Command::new(&backend)
+                    .env("DROPS_FFMPEG_DIR", &ffmpeg_dir)
+                    .current_dir(&res)
+                    .spawn()
+                    .ok();
+            }
+        }
+
+        // 2) Sviluppo (launch-desktop.sh): venv Python del progetto (comportamento storico)
         let home = std::env::var("HOME").ok()?;
         let project_dir =
             std::path::PathBuf::from(&home).join("Documents/Claude/Projects/mp3-downloader");
