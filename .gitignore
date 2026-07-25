@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Dipendenze e build
+node_modules/
+dist/
+build/
+
+# Tauri build (generato da Cargo — mai committare)
+src-tauri/target/
+
+# Binari impacchettati in CI (backend + ffmpeg) — generati dal workflow Windows
+src-tauri/binaries/
+
+# Dati privati (mai nel repository)
+*.cookies.txt
+cookies.txt
+backend/cookies.txt
+
+# Download temporanei
+/tmp/downloads/
+
+# Configurazione runtime utente (vive in ~/.drops/, non nel repo)
+.drops/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V5
+.Trashes
+
+# Log
+*.log
+logs/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env
+.env
+.env.local
+.env.*.local

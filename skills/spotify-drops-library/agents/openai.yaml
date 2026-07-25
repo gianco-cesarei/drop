@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spotify Drops Library"
+  short_description: "Organizza preferiti autorizzati con Drops"
+  default_prompt: "Usa $spotify-drops-library per importare i miei preferiti Spotify e organizzare con Drops i file autorizzati per genere."

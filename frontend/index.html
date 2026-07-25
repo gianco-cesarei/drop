@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drops — Downloader</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #222;
+    --border-hover: #444;
+    --text: #f0f0f0;
+    --muted: #666;
+    --muted2: #444;
+    --accent: #ea580c;
+    --accent-dim: rgba(234,88,12,0.15);
+    --green: #22c55e;
+    --red: #ef4444;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .logo {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .tagline { font-size: 13px; color: var(--muted); margin-bottom: 32px; text-align: center; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  #screen-main { display: flex; flex-direction: column; gap: 16px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 14px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+    width: 100%;
+  }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted2); }
+
+  .quality-group { display: flex; gap: 6px; }
+  .q-btn {
+    flex: 1;
+    padding: 9px 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+  }
+  .q-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .q-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    width: 100%;
+    transition: opacity .15s;
+    letter-spacing: -.2px;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+  .progress-wrap { display: none; flex-direction: column; gap: 10px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; position: relative; }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width .4s ease;
+    animation: pulse-bar 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-bar { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+  /* Indeterminate: barra scorrevole quando non c'è % reale */
+  .progress-bar.indeterminate .progress-fill {
+    width: 30% !important;
+    animation: slide-bar 1.5s cubic-bezier(.4,0,.2,1) infinite;
+    transition: none;
+  }
+  @keyframes slide-bar {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .progress-label { font-size: 13px; color: var(--muted); text-align: center; }
+  .progress-title { font-size: 13px; font-weight: 600; color: var(--text); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .dl-ready {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: rgba(34,197,94,.08);
+    border: 1px solid rgba(34,197,94,.2);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .dl-ready .check { font-size: 32px; }
+  .dl-ready .title { font-size: 14px; font-weight: 700; text-align: center; color: var(--text); }
+  .dl-ready .meta { font-size: 12px; color: var(--muted); }
+  .dl-ready .save-path { font-size: 11px; color: var(--muted2); text-align: center; margin-top: -4px; }
+  .btn-dl {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 24px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: opacity .15s;
+    width: 100%;
+  }
+  .btn-dl:hover { opacity: .88; }
+  .btn-dl:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-dl.saving { background: var(--muted2); color: var(--text); }
+
+  .error-box {
+    display: none;
+    background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.2);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 13px;
+    color: var(--red);
+    text-align: center;
+  }
+
+  .history { margin-top: 4px; }
+  .history-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 10px; }
+  .history-list { display: flex; flex-direction: column; gap: 6px; }
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .history-item .h-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .history-item .h-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  .footer { margin-top: 20px; font-size: 11px; color: var(--muted2); text-align: center; }
+
+  @media (max-width: 520px) {
+    .card { padding: 20px; }
+    .logo { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="logo">Drops<span>.</span></div>
+<div class="tagline">Alta qualità · YouTube & SoundCloud</div>
+
+<div class="card">
+  <div id="screen-main">
+
+    <!-- URL -->
+    <div class="field">
+      <label>Link YouTube o SoundCloud</label>
+      <input type="text" id="urlInput" placeholder="https://youtube.com/watch?v=…" autocomplete="off" spellcheck="false">
+    </div>
+
+    <!-- Formato: Audio / Video -->
+    <div class="field">
+      <label>Formato</label>
+      <div class="quality-group" id="formatGroup">
+        <button class="q-btn active" onclick="setFormat('audio',this)">🎵 Audio (MP3)</button>
+        <button class="q-btn" onclick="setFormat('video',this)">🎬 Video (MP4)</button>
+      </div>
+    </div>
+
+    <!-- Qualità audio -->
+    <div class="field" id="audioQualitySection">
+      <label>Qualità audio</label>
+      <div class="quality-group" id="audioQualityGroup">
+        <button class="q-btn" onclick="setQ('128',this)">128k</button>
+        <button class="q-btn" onclick="setQ('192',this)">192k</button>
+        <button class="q-btn active" onclick="setQ('320',this)">320k ✓</button>
+        <button class="q-btn" onclick="setQ('flac',this)">FLAC</button>
+      </div>
+    </div>
+
+    <!-- Qualità video (nascosta di default) -->
+    <div class="field" id="videoQualitySection" style="display:none">
+      <label>Qualità video</label>
+      <div class="quality-group" id="videoQualityGroup">
+        <button class="q-btn active" onclick="setVQ('1080',this)">1080p ✓</button>
+        <button class="q-btn" onclick="setVQ('720',this)">720p</button>
+        <button class="q-btn" onclick="setVQ('480',this)">480p</button>
+      </div>
+    </div>
+
+    <!-- Clip -->
+    <div class="field">
+      <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
+        <input type="checkbox" id="clipToggle" onchange="toggleClipping()" style="cursor:pointer; width:16px; height:16px;">
+        ✂️ Estrai solo una parte
+      </label>
+    </div>
+
+    <div id="clipPanel" style="display:none; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:8px; gap:10px; flex-direction:column;">
+      <div style="font-size:12px; color:var(--muted);">Formato: hh:mm:ss o mm:ss &mdash; es. <code style="color:var(--text)">01:30:00</code></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field">
+          <label>Inizio</label>
+          <input type="text" id="clipStart" placeholder="00:00:00" maxlength="8" onchange="validateTime(this)">
+        </div>
+        <div class="field">
+          <label>Durata</label>
+          <input type="text" id="clipDuration" placeholder="00:05:00" maxlength="8" onchange="validateTime(this)">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btnDownload" onclick="startDownload()">⬇ Download MP3</button>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-title" id="progressTitle">In attesa…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">Connessione al server…</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Ready -->
+    <div class="dl-ready" id="dlReady">
+      <div class="check" id="dlCheck">✅</div>
+      <div class="title" id="dlTitle">—</div>
+      <div class="meta" id="dlMeta">—</div>
+      <div class="save-path" id="savePath"></div>
+      <button class="btn-dl" id="btnDl">⬇ Scarica</button>
+    </div>
+
+    <!-- History -->
+    <div class="history" id="historyWrap" style="display:none">
+      <div class="history-label">Scaricati di recente</div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">I file vengono eliminati automaticamente dopo 10 minuti dal server</div>
+
+<script>
+// ─── Config ─────────────────────────────────────────────────────────────────
+const API_URL = window.__API_URL__ || localStorage.getItem('__api_url__') || '';
+
+// ─── State ──────────────────────────────────────────────────────────────────
+let quality = '320';
+let videoQuality = '1080';
+let format = 'audio';
+let pollInterval = null;
+let currentJobId = null;
+let authToken = null;
+
+(async () => {
+  try {
+    const res = await fetch(`${API_URL}/auth-token`);
+    if (res.ok) { const data = await res.json(); authToken = data.token; }
+  } catch (e) { authToken = 'local-drops'; }
+  renderHistory();
+})();
+
+// ─── Format ─────────────────────────────────────────────────────────────────
+function setFormat(f, btn) {
+  format = f;
+  document.querySelectorAll('#formatGroup .q-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const isVideo = f === 'video';
+  document.getElementById('audioQualitySection').style.display = isVideo ? 'none' : 'flex';
+  document.getElementById('videoQualitySection').style.display = isVideo ? 'flex' : 'none';
+  updateDownloadButton();
+}
+
+// ─── Quality ────────────────────────────────────────────────────────────────
+function setQ(q, btn) {
+  quality = q;
+  document.querySelectorAll('#audioQualityGroup .q-btn').forEach(b => {
+    b.classList.remove('active');
+    b.textContent = b.textContent.replace(' ✓', '');
+  });
+  btn.classList.add('active');
+  btn.textContent = { '128':'128k', '192':'192k', '320':'320k', 'flac':'FLAC' }[q] + ' ✓';
+}
+
+function setVQ(vq, btn) {
+  videoQuality = vq;
+  document.querySelectorAll('#videoQualityGroup .q-btn').forEach(b => {
+    b.classList.remove('active');
+    b.textContent = b.textContent.replace(' ✓', '');
+  });
+  btn.classList.add('active');
+  btn.textContent = vq + 'p ✓';
+}
+
+function updateDownloadButton() {
+  const isClip = document.getElementById('clipToggle').checked;
+  const isVideo = format === 'video';
+  if (isClip && isVideo)       document.getElementById('btnDownload').textContent = '✂️ Scarica Clip MP4';
+  else if (isClip)             document.getElementById('btnDownload').textContent = '✂️ Scarica Clip Audio';
+  else if (isVideo)            document.getElementById('btnDownload').textContent = '⬇ Download Video MP4';
+  else                         document.getElementById('btnDownload').textContent = '⬇ Download MP3';
+}
+
+// ─── Clipping ───────────────────────────────────────────────────────────────
+function toggleClipping() {
+  const isEnabled = document.getElementById('clipToggle').checked;
+  document.getElementById('clipPanel').style.display = isEnabled ? 'flex' : 'none';
+  if (!isEnabled) {
+    document.getElementById('clipStart').value = '';
+    document.getElementById('clipDuration').value = '';
+  }
+  updateDownloadButton();
+}
+
+function validateTime(input) {
+  const val = input.value.trim();
+  if (!val) return;
+  if (!/^(\d{1,2}:)?\d{1,2}:\d{2}$/.test(val)) {
+    input.style.borderColor = 'var(--red)';
+    showError('Formato orario non valido. Usa hh:mm:ss o mm:ss');
+  } else {
+    input.style.borderColor = '';
+    hideError();
+  }
+}
+
+function timeToSeconds(timeStr) {
+  if (!timeStr) return null;
+  const parts = timeStr.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return null;
+}
+
+// ─── Download ────────────────────────────────────────────────────────────────
+async function startDownload() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { showError('Incolla un link YouTube o SoundCloud'); return; }
+
+  let startTime = null;
+  let duration = null;
+  if (document.getElementById('clipToggle').checked) {
+    const startStr = document.getElementById('clipStart').value.trim();
+    const durStr = document.getElementById('clipDuration').value.trim();
+    if (startStr && durStr) {
+      startTime = timeToSeconds(startStr);
+      duration = timeToSeconds(durStr);
+      if (startTime === null || duration === null || duration <= 0) {
+        showError('Formato orario non valido. Usa hh:mm:ss o mm:ss');
+        return;
+      }
+    }
+  }
+
+  resetUI();
+  showProgress('In coda…', 10);
+  document.getElementById('btnDownload').disabled = true;
+
+  try {
+    const res = await fetch(`${API_URL}/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url,
+        quality,
+        password: authToken || 'local-drops',
+        format,
+        video_quality: videoQuality,
+        start_time: startTime,
+        duration,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Errore server');
+    currentJobId = data.job_id;
+    pollStatus(currentJobId);
+  } catch (err) {
+    hideProgress();
+    document.getElementById('btnDownload').disabled = false;
+    showError(err.message || 'Impossibile connettersi al server. Potrebbe essere in fase di avvio (~30s), riprova.');
+  }
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startDownload();
+});
+
+// ─── Polling ────────────────────────────────────────────────────────────────
+function pollStatus(jobId) {
+  let dots = 0;
+  let lastBytes = 0;
+  let lastTime = Date.now();
+  let speedKBs = 0;
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/${jobId}`);
+      if (!res.ok) { clearInterval(pollInterval); showError('Job non trovato'); return; }
+      const data = await res.json();
+      dots = (dots + 1) % 4;
+      const dotStr = '.'.repeat(dots + 1);
+      const isVideo = data.format === 'video';
+      const realPct = typeof data.progress === 'number' ? data.progress : 0;
+      const dlBytes = data.downloaded_bytes || 0;
+
+      // Calcola velocità da delta bytes
+      const now = Date.now();
+      const dt = (now - lastTime) / 1000;
+      if (dt > 0 && dlBytes > lastBytes) {
+        speedKBs = (dlBytes - lastBytes) / 1024 / dt;
+        lastBytes = dlBytes;
+        lastTime = now;
+      } else if (dlBytes < lastBytes) {
+        lastBytes = dlBytes;
+        lastTime = now;
+      }
+
+      if (data.status === 'pending') {
+        setIndeterminate(true);
+        showProgress(`In coda${dotStr}`, 0, 'Preparazione…');
+      } else if (data.status === 'downloading') {
+        const title = data.title ? `${data.title.slice(0, 50)}${data.title.length > 50 ? '…' : ''}` : 'Download in corso';
+        const mb = (dlBytes / 1024 / 1024).toFixed(1);
+        const speed = speedKBs > 1024 ? `${(speedKBs/1024).toFixed(1)} MB/s` : `${speedKBs.toFixed(0)} KB/s`;
+        const expected = data.expected_bytes || 0;
+        // Calcola % reale: priorità a expected_bytes (più accurato per clip), fallback a progress hook
+        let pct = realPct;
+        if (expected > 0 && dlBytes > 0) {
+          pct = Math.min(99, Math.round(dlBytes * 100 / expected));
+        }
+        const eta = (pct > 0 && pct < 99 && speedKBs > 0 && expected > 0)
+          ? formatEta((expected - dlBytes) / 1024 / speedKBs)
+          : '';
+        const kind = isVideo ? 'Video MP4' : 'MP3';
+        if (pct > 0) {
+          setIndeterminate(false);
+          const expectedMb = expected ? ` / ${(expected/1024/1024).toFixed(0)} MB` : '';
+          const label = `${kind} · ${pct}% · ${mb}${expectedMb} MB · ${speed}${eta ? ' · ' + eta : ''}`;
+          showProgress(title, pct, label);
+        } else {
+          setIndeterminate(true);
+          const label = `${kind} · ${mb} MB · ${speed}${dotStr}`;
+          showProgress(title, 0, label);
+        }
+      } else if (data.status === 'ready') {
+        clearInterval(pollInterval);
+        setIndeterminate(false);
+        showProgress(data.title || 'Pronto!', 100, 'Completato ✓');
+        setTimeout(() => {
+          hideProgress();
+          showReady(jobId, data);
+          addToHistory(data.title, data.quality, data.size, data.duration, jobId, data.format);
+          document.getElementById('btnDownload').disabled = false;
+        }, 600);
+      } else if (data.status === 'error') {
+        clearInterval(pollInterval);
+        hideProgress();
+        document.getElementById('btnDownload').disabled = false;
+        showError(data.error || 'Errore durante il download');
+      }
+    } catch (e) { /* glitch di rete, riprova */ }
+  }, 1000);
+}
+
+// ─── UI helpers ─────────────────────────────────────────────────────────────
+function showProgress(title, pct, label) {
+  document.getElementById('progressWrap').style.display = 'flex';
+  document.getElementById('progressTitle').textContent = title;
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (label) document.getElementById('progressLabel').textContent = label;
+}
+function hideProgress() { document.getElementById('progressWrap').style.display = 'none'; }
+function setIndeterminate(on) {
+  const bar = document.querySelector('#progressWrap .progress-bar');
+  if (!bar) return;
+  if (on) bar.classList.add('indeterminate');
+  else bar.classList.remove('indeterminate');
+}
+function formatEta(seconds) {
+  if (!seconds || !isFinite(seconds) || seconds < 0) return '';
+  if (seconds < 60) return `~${Math.ceil(seconds)}s`;
+  if (seconds < 3600) return `~${Math.ceil(seconds / 60)}min`;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.ceil((seconds % 3600) / 60);
+  return `~${h}h${m}m`;
+}
+function showError(msg) { const el = document.getElementById('errorBox'); el.textContent = '⚠ ' + msg; el.style.display = 'block'; }
+function hideError() { document.getElementById('errorBox').style.display = 'none'; }
+
+function showReady(jobId, data) {
+  const box = document.getElementById('dlReady');
+  box.style.display = 'flex';
+  const isVideo = (data.format || format) === 'video';
+  document.getElementById('dlCheck').textContent = isVideo ? '🎬' : '🎵';
+  const title = data.title || 'Audio';
+  document.getElementById('dlTitle').textContent = title;
+  const sizeMB = data.size ? (data.size / 1024 / 1024).toFixed(1) + ' MB' : '';
+  const dur = data.duration ? formatDuration(data.duration) : '';
+  const qlabel = isVideo
+    ? `MP4 ${data.video_quality || ''}`.trim()
+    : ({ '128':'128 kbps','192':'192 kbps','320':'320 kbps','flac':'FLAC' }[data.quality] || data.quality);
+  document.getElementById('dlMeta').textContent = [qlabel, dur, sizeMB].filter(Boolean).join(' · ');
+  document.getElementById('savePath').textContent = '';
+
+  const btn = document.getElementById('btnDl');
+  btn.textContent = isVideo ? '⬇ Scarica MP4' : '⬇ Scarica MP3';
+  btn.disabled = false;
+  btn.className = 'btn-dl';
+
+  btn.onclick = async () => {
+    btn.textContent = '⏳ Download in corso…';
+    btn.disabled = true;
+    btn.className = 'btn-dl saving';
+    try {
+      const res = await fetch(`${API_URL}/file/${jobId}`);
+      if (!res.ok) throw new Error('File non disponibile');
+      const blob = await res.blob();
+      const ext = data.ext || (isVideo ? 'mp4' : 'mp3');
+      let filename = title.replace(/[^\w\s.\-()[\]]/g, '').trim().slice(0, 80) + '.' + ext;
+      const cd = res.headers.get('content-disposition');
+      if (cd) { const m = cd.match(/filename="?([^"]+)"?/); if (m) filename = m[1]; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      btn.textContent = '✅ Scaricato';
+      btn.className = 'btn-dl';
+      document.getElementById('savePath').textContent = `📁 ${filename}`;
+    } catch(e) {
+      btn.textContent = '⬇ Riprova';
+      btn.disabled = false;
+      btn.className = 'btn-dl';
+      showError(e.message || 'Errore durante il download');
+    }
+  };
+}
+
+function resetUI() {
+  hideError(); hideProgress();
+  document.getElementById('dlReady').style.display = 'none';
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function formatDuration(s) {
+  if (!s) return '';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(Math.floor(s % 60)).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${sec}` : `${m}:${sec}`;
+}
+
+// ─── History ────────────────────────────────────────────────────────────────
+function addToHistory(title, quality, size, duration, jobId, fmt) {
+  const hist = JSON.parse(localStorage.getItem('drops_history') || '[]');
+  hist.unshift({ title, quality, size, duration, jobId, fmt, ts: Date.now() });
+  localStorage.setItem('drops_history', JSON.stringify(hist.slice(0, 20)));
+  renderHistory();
+}
+
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return 'ora';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm fa';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h fa';
+  return Math.floor(diff / 86400) + 'g fa';
+}
+
+function renderHistory() {
+  const hist = JSON.parse(localStorage.getItem('drops_history') || '[]');
+  const wrap = document.getElementById('historyWrap');
+  const list = document.getElementById('historyList');
+  if (!hist.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const qlabel = { '128':'128k','192':'192k','320':'320k','flac':'FLAC' };
+  list.innerHTML = hist.map(h => {
+    const icon = h.fmt === 'video' ? '🎬' : '🎵';
+    const meta = [icon, qlabel[h.quality] || '', h.duration ? formatDuration(h.duration) : '', h.size ? (h.size/1024/1024).toFixed(1)+' MB' : '', h.ts ? timeAgo(h.ts) : ''].filter(Boolean).join(' · ');
+    return `<div class="history-item"><span class="h-title">${h.title||'Audio'}</span><span class="h-meta">${meta}</span></div>`;
+  }).join('');
+}
+</script>
+
+</body>
+</html>
