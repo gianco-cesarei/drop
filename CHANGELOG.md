@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-07-25 (v1.1.0 — fix installer Windows: UI non caricava)
+
+### Fix: frontend non impacchettato nell'exe Windows
+- **Sintomo**: dopo l'installazione del `.exe` su Windows, all'avvio compariva testo/codice grezzo a schermo con errore, invece dell'interfaccia di Drops.
+- **Causa**: `serve_frontend()` in `backend/main.py` cercava `frontend/index.html` con un path relativo a `__file__` (`.parent.parent`). Nell'exe PyInstaller (frozen) quel percorso non esiste e il file non era nemmeno incluso nel bundle → la route `/` sollevava `FileNotFoundError` → HTTP 500 → il WebView mostrava il dump d'errore grezzo.
+- **Fix `backend/main.py`**: aggiunto `import sys`; nuovo helper `_frontend_index_path()` che risolve `index.html` in modalità frozen via `sys._MEIPASS` (e accanto a `sys.executable`) con fallback al layout sorgente `backend/../frontend/`. `serve_frontend()` ora restituisce un 500 con messaggio chiaro e log se il file manca davvero, invece di un traceback grezzo.
+- **Fix `backend/drops-backend.spec`**: `frontend/index.html` aggiunto ai `datas` di PyInstaller → la UI viene estratta in `_MEIPASS/frontend/` e servita correttamente. Build macOS (venv, non-frozen) invariata: usa il ramo di fallback.
+- **Versione**: bump a **1.1.0** in `tauri.conf.json`, `package.json`, `src-tauri/Cargo.toml`.
+- **CI smoke test** (`.github/workflows/windows-build.yml`): dopo la build del backend, il runner Windows avvia `drops-backend.exe` e verifica che `/` risponda `200` con HTML e che `/health` sia OK. Se la UI non viene servita la build fallisce prima di generare l'installer → il bug non può più arrivare in Release.
+- **CI download reale (best-effort)**: step aggiuntivo che scarica davvero un MP3 da un link YouTube corto tramite l'exe impacchettato (valida yt-dlp + ffmpeg end-to-end). È `continue-on-error` per non far fallire la Release se YouTube blocca l'IP del runner CI; l'esito è visibile nei log. Il test di download definitivo resta comunque quello manuale sul PC Windows.
+
+---
+
 ## 2026-07-25 (sessione — supporto build Windows)
 
 ### Installer Windows via GitHub Actions (backend impacchettato)

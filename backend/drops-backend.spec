@@ -21,8 +21,12 @@ hiddenimports = []
 # Impacchetta il frontend (index.html) dentro l'exe: a runtime viene estratto
 # in _MEIPASS/frontend/index.html e servito da serve_frontend().
 _frontend = os.path.join(BACKEND_DIR, "..", "frontend", "index.html")
-if os.path.isfile(_frontend):
-    datas += [(_frontend, "frontend")]
+if not os.path.isfile(_frontend):
+    raise SystemExit(
+        f"[drops-backend.spec] frontend/index.html non trovato in {_frontend!r}: "
+        "impossibile impacchettare la UI. Interrompo la build."
+    )
+datas += [(_frontend, "frontend")]
 
 # Raccogli tutto (moduli, dati, binari) dai pacchetti che caricano risorse a runtime
 for pkg in ("uvicorn", "yt_dlp", "fastapi", "pydantic", "anyio", "starlette"):
