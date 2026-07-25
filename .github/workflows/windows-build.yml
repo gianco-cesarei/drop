@@ -175,12 +175,12 @@ jobs:
           files: src-tauri/target/release/bundle/nsis/*.exe
 
   # ══════════════════════════════════════════════════════════════════════════
-  # Build macOS (.dmg) — runner Intel (macos-13): il .dmg gira su tutti i Mac,
-  # su Apple Silicon via Rosetta. App firmata ad-hoc (gratis, non notarizzata):
-  # al primo avvio l'utente apre con tasto destro → Apri (Gatekeeper).
+  # Build macOS (.dmg) — runner Apple Silicon (macos-14): app arm64 NATIVA
+  # (niente Rosetta). Firmata ad-hoc (gratis, non notarizzata): al primo avvio
+  # l'utente apre con tasto destro → Apri (Gatekeeper).
   # ══════════════════════════════════════════════════════════════════════════
   build-macos:
-    runs-on: macos-13
+    runs-on: macos-14
     permissions:
       contents: write
 
@@ -208,11 +208,11 @@ jobs:
           cp dist/drops-backend src-tauri/binaries/drops-backend
           chmod +x src-tauri/binaries/drops-backend
 
-      - name: Download ffmpeg (Intel static)
+      # ffmpeg statico per l'architettura del runner (arm64) via pacchetto npm.
+      - name: Get ffmpeg (static, arch-matched)
         run: |
-          curl -L "https://evermeet.cx/ffmpeg/getrelease/zip" -o ffmpeg.zip
-          unzip -o ffmpeg.zip -d ffmpeg_extract
-          cp "$(find ffmpeg_extract -name ffmpeg -type f | head -n1)" src-tauri/binaries/ffmpeg
+          npm i ffmpeg-static --no-save --prefix /tmp/ffdl
+          cp /tmp/ffdl/node_modules/ffmpeg-static/ffmpeg src-tauri/binaries/ffmpeg
           chmod +x src-tauri/binaries/ffmpeg
 
       # Stesso smoke test di Windows: l'exe deve servire la UI e /health.
