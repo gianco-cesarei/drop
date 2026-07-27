@@ -264,12 +264,30 @@ jobs:
       - name: Install frontend deps
         run: npm install
 
-      - name: Build Tauri app (DMG beta non notarizzato)
-        run: npm run tauri build -- --bundles dmg
+      # Solo l'.app: NON usiamo il bundle dmg di Tauri (bundle_dmg.sh usa
+      # AppleScript/Finder ed è inaffidabile su runner CI headless).
+      - name: Build Tauri app (.app)
+        run: npm run tauri build -- --bundles app
 
-      - name: Rename dmg (nome leggibile)
+      # Firma ad-hoc (gratis) se non c'è un'identità Apple: evita che Gatekeeper
+      # uccida il backend interno. Se in futuro imposti APPLE_SIGNING_IDENTITY,
+      # ci pensa Tauri in fase di build e questo passo viene saltato.
+      - name: Firma ad-hoc dell'app (fallback)
         run: |
-          cp src-tauri/target/release/bundle/dmg/*.dmg "Drops-${{ github.ref_name }}-macOS.dmg"
+          if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
+            codesign --force --deep --sign - "src-tauri/target/release/bundle/macos/Drops.app"
+          fi
+
+      # DMG creato con hdiutil (nativo, niente AppleScript): sempre affidabile.
+      - name: Crea DMG (hdiutil)
+        run: |
+          APP="src-tauri/target/release/bundle/macos/Drops.app"
+          STAGING="$(mktemp -d)/dmg"
+          mkdir -p "$STAGING"
+          cp -R "$APP" "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          hdiutil create -volname "Drops" -srcfolder "$STAGING" -ov -format UDZO \
+            "Drops-${{ github.ref_name }}-macOS.dmg"
           cp INSTALLAZIONE_DROPS_MAC.txt "LEGGIMI-Installazione-Drops-Mac.txt"
 
       - name: Upload dmg e guida (artifact interno)
