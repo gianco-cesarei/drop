@@ -76,14 +76,13 @@ jobs:
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
 
-      # ─── Download reale (best-effort) ───────────────────────────────────────
-      # Scarica davvero un MP3 da un link YouTube corto per validare l'intera
-      # pipeline (yt-dlp + ffmpeg) sull'exe impacchettato. NON blocca la build:
-      # se YouTube blocca l'IP del runner CI il passo diventa "verde con nota",
-      # cosi la Release non fallisce per cause esterne. Il download vero e
-      # proprio va comunque riprovato sul PC Windows dell'utente.
-      - name: Download reale MP3 (best-effort)
-        continue-on-error: true
+      # ─── Download reale (gate bloccante) ────────────────────────────────────
+      # Scarica davvero un MP3 e valida l'intera pipeline (yt-dlp + ffmpeg)
+      # sull'exe impacchettato. Fonte: SoundCloud (traccia NASA, pubblico
+      # dominio, stabile) — NON usiamo YouTube perche' blocca l'IP dei runner
+      # datacenter. Se questo passo fallisce la build si ferma: il download
+      # DEVE funzionare per pubblicare.
+      - name: Download reale MP3 (gate)
         shell: pwsh
         run: |
           $env:DROPS_FFMPEG_DIR = "$PWD/src-tauri/binaries"
@@ -103,7 +102,7 @@ jobs:
             }
             if (-not $up) { throw "Backend non avviato per il test di download." }
 
-            $body = @{ url = "https://www.youtube.com/watch?v=jNQXAC9IVRw"; quality = "320"; format = "audio" } | ConvertTo-Json
+            $body = @{ url = "https://soundcloud.com/nasa/small-steps-giant-793608487"; quality = "320"; format = "audio" } | ConvertTo-Json
             $r = Invoke-RestMethod -Uri "http://127.0.0.1:8001/download" -Method Post -ContentType "application/json" -Body $body
             $job = $r.job_id
             Write-Host "Job avviato: $job"
