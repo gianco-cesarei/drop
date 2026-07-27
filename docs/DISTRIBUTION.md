@@ -2,6 +2,57 @@
 
 ## 📦 Come Preparare e Condividere il DMG
 
+## Regola principale: niente autorizzazione automatica
+
+Un’app non può approvare sé stessa durante l’installazione: Gatekeeper la
+controlla prima che il suo codice possa partire. Script che disattivano
+Gatekeeper o rimuovono automaticamente la quarantena peggiorano sicurezza e UX.
+
+Distribuzione corretta:
+
+1. firma `Developer ID Application`;
+2. notarizzazione Apple;
+3. ticket notarizzazione applicato al DMG;
+4. verifica Gatekeeper prima della pubblicazione.
+
+`build-dmg.sh` automatizza questi passaggi quando trova configurazione Apple.
+
+### Configurazione una tantum
+
+Serve account Apple Developer con certificato `Developer ID Application`
+installato nel Portachiavi.
+
+Mostra identità disponibili:
+
+```bash
+security find-identity -v -p codesigning
+```
+
+Salva credenziali notarizzazione nel Portachiavi. Usa password specifica per app,
+non password principale Apple:
+
+```bash
+xcrun notarytool store-credentials "drops-notary" \
+  --apple-id "EMAIL_APPLE_ID" \
+  --team-id "TEAM_ID"
+```
+
+`notarytool` chiederà password specifica per app e la conserverà nel
+Portachiavi.
+
+Prima della build:
+
+```bash
+export APPLE_SIGNING_IDENTITY="Developer ID Application: NOME (TEAM_ID)"
+export DROPS_NOTARY_PROFILE="drops-notary"
+./build-dmg.sh
+```
+
+Non salvare password, certificati o segreti nel repository.
+
+Senza queste variabili, script produce build locale non notarizzata e avvisa
+chiaramente che Gatekeeper può bloccarla.
+
 ### Step 1: Build del Progetto
 
 ```bash
@@ -32,6 +83,9 @@ open ~/Desktop/Drops-test.dmg
 ```
 
 **Checklist di verifica:**
+- ✅ `codesign --verify --deep --strict Drops.app` riesce
+- ✅ `xcrun stapler validate Drops.dmg` riesce
+- ✅ `spctl --assess` accetta il DMG
 - ✅ L'app parte senza errori
 - ✅ Riesci a scaricare un video
 - ✅ Il file viene salvato
@@ -80,7 +134,8 @@ Manda questo messaggio:
 > 1. Apri il DMG allegato
 > 2. Trascina Drops.app nella cartella Applications
 > 3. Lancia l'app da Applications
-> 4. Fatto! Nessuna password da ricordare.
+> 4. Accetta solo i permessi macOS necessari a cartelle e unità che vuoi usare.
+> 5. Fatto! Nessuna password da ricordare.
 >
 > Se hai problemi, i log sono in: `~/.drops/logs/backend.log`
 >
@@ -118,6 +173,9 @@ Usa questa checklist prima di mandare il DMG a chiunque:
 
 - [ ] Tutti i 3 fix (path, auth, logging) sono committati
 - [ ] Ho rebuildato il DMG con `cargo tauri build`
+- [ ] App firmata con `Developer ID Application`
+- [ ] DMG notarizzato e ticket applicato
+- [ ] `spctl --assess` accetta il DMG
 - [ ] Ho testato il DMG su un'altra macchina (o almeno rinominato e reinstallato)
 - [ ] I log vengono creati correttamente in ~/.drops/logs/
 - [ ] Il token viene generato in ~/.drops/config.json
@@ -139,4 +197,3 @@ Quando sei pronto per distribuire a più utenti:
 Per adesso, questi 3 fix ti permettono di mandare l'app a chiunque senza rischi.
 
 ---
-

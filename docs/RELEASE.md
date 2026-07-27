@@ -49,8 +49,15 @@ con permessi di scrittura ai workflow).
 ## macOS (.dmg)
 Lo stesso tag `vX.Y.Z` costruisce anche il `.dmg` Mac (job `build-macos`, runner
 Apple Silicon `macos-14`: app arm64 nativa) e lo allega alla stessa Release.
-L'app è firmata **ad-hoc** (gratis, non notarizzata):
-- Primo avvio: l'utente installa trascinando in Applicazioni, poi apre con
-  **tasto destro → Apri** (Gatekeeper). Se resta bloccata: `xattr -dr com.apple.quarantine /Applications/Drops.app`.
-- Per una distribuzione senza avvisi servirebbe un Apple Developer ID + notarizzazione (99$/anno).
+Una release pubblica deve essere firmata con `Developer ID Application` e
+notarizzata. `build-dmg.sh` gestisce firma, invio con `notarytool`, applicazione
+ticket e verifica Gatekeeper quando sono configurati `APPLE_SIGNING_IDENTITY` e
+`DROPS_NOTARY_PROFILE`.
+
+Una build locale non notarizzata può essere aperta, dopo averne verificato la
+provenienza, con **tasto destro → Apri** oppure da
+**Impostazioni di Sistema → Privacy e sicurezza → Apri comunque**.
+Non disattivare Gatekeeper e non rimuovere automaticamente la quarantena.
+
+Vedi `docs/DISTRIBUTION.md` e `docs/INSTALLAZIONE_MACOS.md`.
 - ffmpeg per Mac: build statica arm64 dal pacchetto npm `ffmpeg-static`.

@@ -102,16 +102,14 @@ Il progress è calcolato a più livelli con fallback:
 
 ---
 
-## Roadmap — Fase 1 (prossimi interventi, architettura invariata)
+## Roadmap prodotto
 
-Ordine di priorità suggerito:
+Fonte principale: `docs/PRODUCT_ROADMAP.md`.
 
-1. **Tag ID3 automatici** — `mutagen` in backend, post-processing dopo download MP3. Alta priorità, basso sforzo.
-2. **Auto-update yt-dlp** — check all'avvio del backend. Critico perché YouTube cambia spesso le API.
-3. **Preferenze persistenti** — `~/.drops/prefs.json`, endpoint `/settings` GET+POST, UI settings nella sidebar.
-4. **Cronologia persistente** — `~/.drops/history.json`, sopravvive alla chiusura dell'app.
-5. **Download playlist** — richiede separare `backend/downloader.py` da `main.py` prima di implementare.
-6. **Supporto altri siti** — ampliare `ALLOWED_DOMAINS` (Vimeo, TikTok, Instagram, Twitch già supportati da yt-dlp).
+- V1: download affidabile → updater → libreria locale → player → strumenti DJ.
+- V2: Spotify → SoundCloud → YouTube → analytics sviluppatore.
+
+Non aggiungere priorità parallele in questo file: aggiornare roadmap principale.
 
 ### Quando implementare playlist: refactor prima
 Separare `main.py` in:
@@ -121,7 +119,7 @@ Separare `main.py` in:
 
 ---
 
-## Roadmap — Fase 2 (deploy pubblico, futuro)
+## Architettura futura per distribuzione pubblica
 
 - Servire frontend da Tauri (non da Python)
 - Aggiungere Tauri plugin nativi

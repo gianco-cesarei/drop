@@ -6,6 +6,8 @@ La porta è configurabile via env DROPS_PORT (default 8000).
 """
 import os
 import sys
+import threading
+import time
 
 # ─── Fix PyInstaller "windowed" (console=False) su Windows ────────────────────
 # In modalità windowed sys.stdout/sys.stderr sono None: uvicorn e il modulo
@@ -36,7 +38,30 @@ import uvicorn  # noqa: E402  (dopo il fix degli stream)
 
 from main import app  # noqa: E402
 
+
+def _watch_parent() -> None:
+    """Termina backend se processo desktop padre non esiste più."""
+    raw_pid = os.environ.get("DROPS_PARENT_PID")
+    if not raw_pid:
+        return
+    try:
+        parent_pid = int(raw_pid)
+    except ValueError:
+        return
+
+    def monitor() -> None:
+        while True:
+            time.sleep(2)
+            try:
+                os.kill(parent_pid, 0)
+            except (OSError, ProcessLookupError):
+                os._exit(0)
+
+    threading.Thread(target=monitor, name="drops-parent-watchdog", daemon=True).start()
+
+
 if __name__ == "__main__":
+    _watch_parent()
     host = os.environ.get("DROPS_HOST", "127.0.0.1")
     port = int(os.environ.get("DROPS_PORT", "8000"))
     uvicorn.run(app, host=host, port=port, log_level="info")

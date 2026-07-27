@@ -21,7 +21,7 @@ Drop the resulting **Drops.icns** into your app bundle's
 `CFBundleIconFile`.
 
 ## Brand
-- Primary:   `#ea580c`
+- Primary:   `#22c55e`
 - Surface:   `#0a0a0a`
 - Accent:    `#f0f0f0`
 - Shape:     macOS squircle (superellipse), ~22% radius

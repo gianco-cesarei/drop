@@ -4,6 +4,35 @@
 
 ## [Unreleased]
 
+- Aggiunta roadmap unificata `docs/PRODUCT_ROADMAP.md`: V1 copre
+  distribuzione, libreria locale, player e strumenti DJ; V2 copre account
+  esterni e analytics. Roadmap v2 precedente resta approfondimento tecnico.
+- Rebranding v1.3: accento arancione sostituito dal verde `#22C55E`, già
+  coerente con guida Windows.
+- Nuova icona Drops v3: goccia verde su fondo nero e onda sonora costruita su
+  assi esatti `x=512`, `y=512`; generate varianti macOS, Windows e PNG.
+- Nuova coda multi-link: fino a 100 elementi, con 3 download simultanei.
+- Salvataggio diretto in `Download`; selettore nativo permette cartella
+  alternativa senza obbligare utente a sceglierla.
+- Interfaccia MP3 predefinita; modalità Video spostata nello switch in alto a
+  destra. Taglio clip disponibile e visibile solo in modalità Video.
+- Backend desktop ora riceve PID processo Tauri e termina automaticamente se
+  app viene chiusa o sostituita durante aggiornamento; evita UI vecchia servita
+  da processo orfano sulla porta 8000.
+- Plugin Tauri `single-instance`: secondo avvio porta in primo piano finestra
+  esistente invece di creare altra coppia app/backend.
+- Controllo non invasivo ultima GitHub Release e banner “aggiornamento
+  disponibile”; nessun download/install automatico finché updater firmato non
+  viene configurato.
+- Build macOS: supporto firma `Developer ID Application`, notarizzazione tramite
+  profilo `notarytool`, stapling e verifica Gatekeeper in `build-dmg.sh`.
+- Rimossa firma ad-hoc forzata da `tauri.macos.conf.json`; build locale resta
+  possibile, release pubblica usa identità Apple da ambiente.
+- Aggiunta guida sicura `docs/INSTALLAZIONE_MACOS.md`; nessuna disattivazione
+  Gatekeeper o rimozione automatica quarantena.
+- Aggiunto `INSTALLAZIONE_DROPS_MAC.txt`; build locale e Release GitHub lo
+  pubblicano accanto al DMG per spiegare click destro → Apri.
+
 ---
 
 ## 2026-07-25 (v1.2.0 — supporto macOS)

@@ -39,6 +39,7 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
         let ffmpeg_dir = res.join("ffmpeg");
         match Command::new(&backend)
             .env("DROPS_FFMPEG_DIR", &ffmpeg_dir)
+            .env("DROPS_PARENT_PID", std::process::id().to_string())
             .current_dir(&res)
             .spawn()
         {
@@ -72,6 +73,7 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
                 }
                 return Command::new(&backend)
                     .env("DROPS_FFMPEG_DIR", &ffmpeg_dir)
+                    .env("DROPS_PARENT_PID", std::process::id().to_string())
                     .current_dir(&res)
                     .spawn()
                     .ok();
@@ -85,6 +87,7 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
         let python = project_dir.join(".venv/bin/python3.11");
         let backend_dir = project_dir.join("backend");
         Command::new(&python)
+            .env("DROPS_PARENT_PID", std::process::id().to_string())
             .args([
                 "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000",
             ])
@@ -104,6 +107,13 @@ fn main() {
     let backend_for_exit = backend.clone();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .setup(move |app| {
             let child = spawn_backend(app);
             if child.is_some() {

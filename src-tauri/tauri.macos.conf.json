@@ -5,7 +5,6 @@
       "binaries/ffmpeg": "ffmpeg/ffmpeg"
     },
     "macOS": {
-      "signingIdentity": "-",
       "minimumSystemVersion": "10.15"
     }
   }

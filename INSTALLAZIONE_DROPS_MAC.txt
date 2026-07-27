@@ -1,0 +1,39 @@
+DROPS — INSTALLAZIONE SU MAC
+============================
+
+1. Apri il file Drops-...-macOS.dmg.
+2. Trascina Drops nella cartella Applicazioni.
+3. Chiudi la finestra del DMG.
+4. Apri Finder → Applicazioni.
+5. Trova Drops.
+6. Fai click destro su Drops.
+   In alternativa: tieni premuto Control e fai click.
+7. Seleziona Apri.
+8. Nel messaggio di macOS premi nuovamente Apri.
+
+Questa procedura serve solo al primo avvio della versione beta non notarizzata.
+Dagli avvii successivi puoi aprire Drops normalmente.
+
+SE NON COMPARE IL PULSANTE APRI
+-------------------------------
+
+1. Prova ad aprire Drops una volta.
+2. Apri Impostazioni di Sistema.
+3. Vai in Privacy e sicurezza.
+4. Scorri fino al messaggio “Drops è stato bloccato”.
+5. Premi Apri comunque.
+6. Conferma con Touch ID o password del Mac.
+
+IMPORTANTE
+----------
+
+Apri Drops solo se hai ricevuto il file direttamente da Giancarlo o dal
+repository ufficiale del progetto.
+
+Non disattivare Gatekeeper.
+Non eseguire comandi Terminale trovati online per eliminare controlli di
+sicurezza.
+
+Se macOS dice “danneggerà il computer” o “contiene malware”, non procedere:
+manda screenshot e versione macOS a chi ti ha fornito Drops.
+

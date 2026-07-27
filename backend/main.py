@@ -8,6 +8,8 @@ import shutil
 import logging
 import json
 import subprocess
+import urllib.error
+import urllib.request
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -78,8 +80,16 @@ DOWNLOAD_DIR = Path(
     os.environ.get("DROPS_DOWNLOAD_DIR", str(Path(tempfile.gettempdir()) / "drops-downloads"))
 )
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+DEFAULT_SAVE_DIR = Path(
+    os.environ.get("DROPS_DEFAULT_SAVE_DIR", str(Path.home() / "Downloads"))
+).expanduser()
+DEFAULT_SAVE_DIR.mkdir(parents=True, exist_ok=True)
 MAX_CONCURRENT = 3
+MAX_QUEUED = 100
 FILE_TTL = 600  # 10 minuti
+APP_VERSION = os.environ.get("DROPS_APP_VERSION", "1.3.0")
+GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/gianco-cesarei/drop/releases/latest"
+UPDATE_CACHE_SECONDS = 3600
 
 # ─── App ────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Drops API")
@@ -95,6 +105,8 @@ app.add_middleware(
 # ─── State ──────────────────────────────────────────────────────────────────
 jobs: dict = {}
 semaphore = threading.Semaphore(MAX_CONCURRENT)
+selected_destinations: dict[str, Path] = {}
+update_cache: dict = {"checked_at": 0.0, "result": None}
 
 ALLOWED_DOMAINS = [
     "youtube.com", "youtu.be",
@@ -124,6 +136,7 @@ class DownloadRequest(BaseModel):
     video_quality: str = "1080"          # "1080" | "720" | "480"
     start_time: int | None = None        # secondi (clip)
     duration: int | None = None          # secondi (clip)
+    destination_token: str | None = None
     spotify_track_id: str | None = None
     rights_confirmed: bool = False
 
@@ -135,7 +148,12 @@ def cleanup_old_files():
     for job_id, job in list(jobs.items()):
         if now - job["created_at"] > FILE_TTL:
             fp = job.get("file_path")
-            if fp and os.path.exists(fp) and not job.get("library_path"):
+            if (
+                fp
+                and os.path.exists(fp)
+                and not job.get("library_path")
+                and not job.get("saved_path")
+            ):
                 try:
                     os.remove(fp)
                 except Exception:
@@ -149,6 +167,117 @@ def safe_filename(name: str, ext: str) -> str:
     clean = "".join(c for c in name if c.isalnum() or c in " .-_()[]").strip()
     clean = clean[:80]
     return f"{clean}.{ext}" if clean else f"audio.{ext}"
+
+
+def unique_destination(target_dir: Path, title: str, ext: str) -> Path:
+    """Restituisce un nome sicuro senza sovrascrivere file esistenti."""
+    filename = safe_filename(title, ext)
+    destination = target_dir / filename
+    counter = 2
+    while destination.exists():
+        destination = target_dir / f"{Path(filename).stem} ({counter}).{ext}"
+        counter += 1
+    return destination
+
+
+def choose_destination_folder() -> Path | None:
+    """Apre selettore cartella nativo. None indica annullamento utente."""
+    if sys.platform == "darwin":
+        result = subprocess.run(
+            [
+                "osascript",
+                "-e",
+                'POSIX path of (choose folder with prompt "Scegli dove salvare i download di Drops")',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        value = result.stdout.strip()
+    elif os.name == "nt":
+        script = (
+            "Add-Type -AssemblyName System.Windows.Forms; "
+            "$dialog = New-Object System.Windows.Forms.FolderBrowserDialog; "
+            "$dialog.Description = 'Scegli dove salvare i download di Drops'; "
+            "if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) "
+            "{ Write-Output $dialog.SelectedPath }"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-STA", "-Command", script],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        value = result.stdout.strip()
+    else:
+        zenity = shutil.which("zenity")
+        if not zenity:
+            raise RuntimeError("Selettore cartella non disponibile su questo sistema")
+        result = subprocess.run(
+            [zenity, "--file-selection", "--directory", "--title=Scegli cartella Drops"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        value = result.stdout.strip()
+
+    if not value:
+        return None
+    path = Path(value).expanduser().resolve()
+    if not path.is_dir():
+        raise RuntimeError("Cartella selezionata non valida")
+    if not os.access(path, os.W_OK):
+        raise RuntimeError("Drops non ha permesso di scrittura nella cartella selezionata")
+    return path
+
+
+def version_tuple(value: str) -> tuple[int, int, int]:
+    clean = value.strip().lstrip("v")
+    parts = clean.split(".")
+    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+        raise ValueError(f"Versione non valida: {value}")
+    return tuple(int(part) for part in parts)
+
+
+def check_latest_release() -> dict:
+    now = time.time()
+    cached = update_cache.get("result")
+    if cached and now - update_cache["checked_at"] < UPDATE_CACHE_SECONDS:
+        return cached
+
+    request = urllib.request.Request(
+        GITHUB_LATEST_RELEASE_API,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": f"Drops/{APP_VERSION}",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            release = json.load(response)
+        latest = str(release["tag_name"]).lstrip("v")
+        result = {
+            "current_version": APP_VERSION,
+            "latest_version": latest,
+            "available": version_tuple(latest) > version_tuple(APP_VERSION),
+            "release_url": release.get("html_url"),
+            "notes": release.get("body") or "",
+        }
+    except (urllib.error.URLError, TimeoutError, KeyError, ValueError, json.JSONDecodeError) as exc:
+        logger.warning(f"Controllo aggiornamenti fallito: {exc}")
+        result = {
+            "current_version": APP_VERSION,
+            "latest_version": None,
+            "available": False,
+            "release_url": None,
+            "error": "Controllo aggiornamenti temporaneamente non disponibile",
+        }
+
+    update_cache.update({"checked_at": now, "result": result})
+    return result
 
 
 def ffmpeg_bin() -> str:
@@ -182,6 +311,7 @@ def do_download(
     start_time: int | None = None,
     duration: int | None = None,
     library_context: dict | None = None,
+    target_dir: Path | None = None,
 ):
     with semaphore:
         try:
@@ -396,6 +526,13 @@ def do_download(
                 shutil.move(str(file_path), destination)
                 file_path = destination
                 size = file_path.stat().st_size
+            else:
+                save_dir = target_dir or DEFAULT_SAVE_DIR
+                save_dir.mkdir(parents=True, exist_ok=True)
+                destination = unique_destination(save_dir, title, output_ext)
+                shutil.move(str(file_path), destination)
+                file_path = destination
+                size = file_path.stat().st_size
 
             jobs[job_id].update({
                 "status": "ready",
@@ -407,6 +544,7 @@ def do_download(
                 "format": fmt,
                 "progress": 100,
                 "library_path": str(file_path) if library_context else None,
+                "saved_path": str(file_path),
             })
             logger.info(f"Pronto - Job:{job_id} '{title}' {size} bytes")
 
@@ -422,10 +560,34 @@ def health():
     return {"status": "ok", "active_jobs": active, "total_jobs": len(jobs)}
 
 
+@app.get("/app-info")
+def app_info():
+    return {"name": "Drops", "version": APP_VERSION}
+
+
+@app.get("/update/check")
+def update_check():
+    return check_latest_release()
+
+
 @app.get("/auth-token")
 def auth_token():
     """Endpoint di compatibilità – app locale, nessuna autenticazione reale."""
     return {"token": "local-drops"}
+
+
+@app.post("/select-folder")
+def select_folder():
+    try:
+        path = choose_destination_folder()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if path is None:
+        return {"selected": False}
+
+    token = str(uuid.uuid4())
+    selected_destinations[token] = path
+    return {"selected": True, "token": token, "path": str(path)}
 
 
 @app.post("/download")
@@ -441,9 +603,28 @@ def start_download(req: DownloadRequest):
     if req.format == "video" and req.video_quality not in VIDEO_FORMAT_MAP:
         raise HTTPException(status_code=400, detail="Qualità video non valida")
 
+    if req.format not in ("audio", "video"):
+        raise HTTPException(status_code=400, detail="Formato non valido")
+
+    if req.format == "audio" and (req.start_time is not None or req.duration is not None):
+        raise HTTPException(status_code=400, detail="Il taglio è disponibile solo per i video")
+
+    if (req.start_time is None) != (req.duration is None):
+        raise HTTPException(status_code=400, detail="Inizio e durata clip devono essere indicati insieme")
+
+    if req.start_time is not None and (req.start_time < 0 or req.duration <= 0):
+        raise HTTPException(status_code=400, detail="Intervallo clip non valido")
+
     active = sum(1 for j in jobs.values() if j["status"] in ("pending", "downloading"))
-    if active >= MAX_CONCURRENT:
-        raise HTTPException(status_code=429, detail="Troppi download in corso, riprova tra 30 secondi")
+    if active >= MAX_QUEUED:
+        raise HTTPException(status_code=429, detail="Coda piena: massimo 100 download")
+
+    if req.destination_token:
+        target_dir = selected_destinations.get(req.destination_token)
+        if target_dir is None:
+            raise HTTPException(status_code=400, detail="Cartella non più valida: selezionala di nuovo")
+    else:
+        target_dir = DEFAULT_SAVE_DIR
 
     library_context = None
     if req.spotify_track_id:
@@ -472,6 +653,8 @@ def start_download(req: DownloadRequest):
         "ext": None,
         "progress": 0,
         "library_path": None,
+        "saved_path": None,
+        "destination": str(target_dir),
     }
 
     t = threading.Thread(
@@ -485,6 +668,7 @@ def start_download(req: DownloadRequest):
             req.start_time,
             req.duration,
             library_context,
+            target_dir,
         ),
         daemon=True,
     )
@@ -512,6 +696,8 @@ def get_status(job_id: str):
         "downloaded_bytes": j.get("downloaded_bytes", 0),
         "expected_bytes": j.get("expected_bytes", 0),
         "library_path": j.get("library_path"),
+        "saved_path": j.get("saved_path"),
+        "destination": j.get("destination"),
     }
 
 
@@ -570,10 +756,17 @@ def get_file(job_id: str, background_tasks: BackgroundTasks):
     if not fp or not os.path.exists(fp):
         raise HTTPException(status_code=404, detail="File non trovato sul server")
 
-    if j.get("library_path"):
+    if j.get("library_path") or j.get("saved_path"):
+        ext = j.get("ext", "mp3")
+        if ext == "mp4":
+            media_type = "video/mp4"
+        elif ext == "flac":
+            media_type = "audio/flac"
+        else:
+            media_type = "audio/mpeg"
         return FileResponse(
             fp,
-            media_type="audio/flac" if j.get("ext") == "flac" else "audio/mpeg",
+            media_type=media_type,
             filename=Path(fp).name,
         )
 

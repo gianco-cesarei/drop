@@ -30,7 +30,7 @@ La cartella musica è separata dal progetto.
 - Token Spotify ottenuto e salvato localmente.
 - **403 RISOLTO (24 luglio 2026).** `/v1/me` e `/v1/me/tracks` ora rispondono
   correttamente. Account autenticato: `31bnpr6snvsmbihbkfb6w2wkvzvq`
-  (Giancarlo Cesarei), 720 preferiti letti.
+  (Giancarlo Cesarei).
 
 ### Come è stato risolto il 403
 
@@ -51,10 +51,11 @@ Fix applicato:
    l'account corretto sulla schermata di consenso.
 4. Verifica con `backend/diagnose_spotify.py` (vedi sotto).
 
-### Import completato (24 luglio 2026)
+### Import completato e verificato (25 luglio 2026)
 
-- `POST /spotify/import` COMPLETATO: **722 preferiti** importati in
+- `POST /spotify/import` COMPLETATO: **723 preferiti** presenti in
   `~/.drops/spotify-library.json`, tutti con genere risolto.
+- Catalogo verificato alle `00:17:19`: 558047 byte.
 - **I generi NON vengono più da Spotify** (la quota Development Mode dava
   `429 QUOTA_EXCEEDED` su ~780 chiamate `/v1/artists/{id}`). Ora arrivano da
   **MusicBrainz** per nome artista: nessuna auth, nessuna quota, ~1 req/s, cache
@@ -204,7 +205,7 @@ Fuori dal repository:
 ```
 
 - Token file esiste dopo callback riuscita.
-- Catalogo resta vuoto/non aggiornato finché `/v1/me/tracks` restituisce 403.
+- Catalogo contiene attualmente 723 preferiti importati.
 - Non stampare contenuto token nei log o nella chat.
 
 Per forzare nuovo consenso, usare di nuovo `/spotify/connect`; non riutilizzare
@@ -225,20 +226,18 @@ File:
 Download completato, circa 8.8 MB, metadati incorporati. Questo conferma che
 downloader, SoundCloud e destinazione `Music Gianco` funzionano.
 
-## Diagnosi consigliata per prossima AI
+## Diagnosi solo se il 403 ricompare
 
-1. Verificare in dashboard che `APIs used` mostri `Web API`.
-2. Aprire `User Management`, rimuovere e riaggiungere account corretto se
-   necessario.
-3. Verificare che app sia posseduta dallo stesso account Premium usato nel login.
-4. Attendere propagazione impostazioni Spotify e ripetere OAuth completo.
-5. Provare endpoint innocuo `/v1/me` con token corrente per identificare account
+Il 403 è risolto. Non trattarlo come blocco attuale. In caso di regressione:
+
+1. Provare endpoint innocuo `/v1/me` con token corrente per identificare account
    Spotify effettivamente autenticato; non esporre token.
-6. Confrontare ID/account restituito da `/v1/me` con utente previsto.
-7. Riprovare `/v1/me/tracks?limit=1`.
-8. Se `/v1/me` funziona ma `/v1/me/tracks` resta 403, blocco è allowlist/quota
+2. Confrontare ID/account restituito da `/v1/me` con utente previsto.
+3. Cancellare token e stato OAuth stantii, quindi rifare `/spotify/connect`.
+4. Riprovare `/v1/me/tracks?limit=1`.
+5. Se `/v1/me` funziona ma `/v1/me/tracks` resta 403, blocco è allowlist/quota
    Spotify, non codice Drops.
-9. Se Spotify non sblocca, usare esportazione dati Spotify JSON come fallback:
+6. Se Spotify non sblocca, usare esportazione dati Spotify JSON come fallback:
    importare metadata dei preferiti senza Web API e continuare stesso flusso
    candidati/download autorizzati.
 
@@ -251,4 +250,3 @@ downloader, SoundCloud e destinazione `Music Gianco` funzionano.
 - Destinazione finale: `Music Gianco/<Genere>/`.
 - Obiettivo secondario progetto: scoprire brani compatibili coi gusti di
   Giancarlo e aggiungerli alla selezione musicale.
-
