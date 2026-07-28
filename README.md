@@ -1,172 +1,99 @@
-# Drops — MP3 Downloader
+# Drops
 
-Stack: FastAPI + yt-dlp (Render) · HTML statico (Netlify) · Totalmente gratuito.
+Desktop downloader per macOS basato su Tauri, FastAPI, yt-dlp e FFmpeg.
 
-## Agente Spotify → Drops → Music Gianco
+## Stato
 
-Agente importa tutti i “Brani che ti piacciono” come metadati, prepara
-candidati esterni e salva download autorizzati in:
+| Piattaforma | Stato |
+|---|---|
+| macOS Apple Silicon | supportata, build privata `1.0.5` in verifica |
+| Windows 10/11 | sperimentale, non ancora verificata da utente |
 
-```text
-~/Documents/Music Gianco/<Genere>/Artista - Titolo.mp3
-```
+`1.0.5` diventa `1.1.0` solo dopo superamento checklist macOS.
 
-Configurazione:
+## Funzioni
 
-1. Crea app nel [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Registra redirect URI `http://127.0.0.1:8000/spotify/callback`.
-3. Imposta `SPOTIFY_CLIENT_ID`. Opzionali:
-   `SPOTIFY_REDIRECT_URI` e `DROPS_MUSIC_DIR`.
-4. Avvia backend locale.
-5. Apri `http://127.0.0.1:8000/spotify/connect` nel browser, completa login,
-   poi chiama `POST /spotify/import`.
+- download MP3 da YouTube e SoundCloud;
+- qualità 128k, 192k, 320k e FLAC;
+- download video 480p, 720p e 1080p;
+- taglio clip in modalità Video;
+- coda fino a 100 link;
+- massimo 3 download simultanei;
+- salvataggio automatico in Download;
+- cartella alternativa o volume rimovibile;
+- controllo nuova Release GitHub.
 
-API agente:
-
-- `GET /spotify/connect`
-- `GET /spotify/callback`
-- `POST /spotify/import`
-- `GET /spotify/library?offset=0&limit=100`
-- `POST /spotify/library/{spotify_id}/candidates`
-- `POST /download` con `spotify_track_id` e `rights_confirmed`
-
-Spotify fornisce solo catalogo e generi. Conferma diritti richiesta prima di
-ogni download legato alla libreria.
-
----
+Usa Drops solo per contenuti che puoi legalmente scaricare.
 
 ## Struttura
 
-```
-mp3-downloader/
-├── backend/
-│   ├── main.py           ← API FastAPI
-│   ├── requirements.txt
-│   └── render.yaml       ← config deploy Render
-└── frontend/
-    ├── index.html        ← app web
-    └── netlify.toml      ← config deploy Netlify
+```text
+backend/        API locale, download e integrazioni
+frontend/       interfaccia desktop
+src-tauri/      shell nativa e configurazione bundle
+docs/           installazione, build e distribuzione
+deploy/         configurazioni web legacy
 ```
 
----
+Materiali personali, PDF, roadmap e mockup non fanno parte del repository.
 
-## Deploy — passo per passo
+## Sviluppo macOS
 
-### 1. Crea il repo su GitHub
+Prerequisiti:
 
-1. Vai su github.com → **New repository**
-2. Nome: `drops-mp3` (o quello che vuoi), **Private**
-3. Carica tutti i file mantenendo la struttura di cartelle sopra
+- Python 3.11;
+- Node.js 20;
+- Rust;
+- FFmpeg.
 
-### 2. Deploy Backend su Render
-
-1. Vai su [render.com](https://render.com) → Sign up con GitHub
-2. **New** → **Web Service**
-3. Collega il repo `drops-mp3`
-4. Impostazioni:
-   - **Root Directory**: `backend`
-   - **Environment**: `Python 3`
-   - **Build Command**: `apt-get update && apt-get install -y ffmpeg && pip install -r requirements.txt`
-   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Plan**: Free
-5. **Environment Variables** (tab "Environment"):
-   - `APP_PASSWORD` = `culo`
-6. Clicca **Create Web Service**
-7. Aspetta 3-5 minuti. Render ti darà un URL tipo:
-   `https://drops-mp3-xxxx.onrender.com`
-   **Copialo — ti serve nel passo successivo.**
-
-### 3. Aggiorna il Frontend con l'URL del backend
-
-Apri `frontend/index.html` e cerca questa riga (~riga 220):
-
-```js
-const API_URL = (
-  window.__API_URL__ ||
-  localStorage.getItem('__api_url__') ||
-  'https://mp3-downloader-api.onrender.com'  // ← CAMBIA QUESTO
-);
+```bash
+python3.11 -m venv .venv
+.venv/bin/pip install -r backend/requirements.txt
+npm install
+./launch-desktop.sh
 ```
 
-Sostituisci `https://mp3-downloader-api.onrender.com` con il tuo URL Render, es:
-```js
-  'https://drops-mp3-xxxx.onrender.com'
+## Build macOS
+
+Build privata non notarizzata:
+
+```bash
+./build-dmg.sh
 ```
 
-Salva e fai push su GitHub.
+Build pubblica:
 
-### 4. Deploy Frontend su Netlify
-
-1. Vai su [netlify.com](https://netlify.com) → Sign up con GitHub
-2. **Add new site** → **Import an existing project**
-3. Collega il repo `drops-mp3`
-4. Impostazioni:
-   - **Base directory**: `frontend`
-   - **Publish directory**: `frontend`
-   - Build command: *(lascia vuoto)*
-5. Clicca **Deploy site**
-6. Netlify ti darà un URL tipo `https://amazing-drops-123.netlify.app`
-   Puoi rinominarlo in **Site settings → Change site name**
-
-### 5. UptimeRobot — tieni sveglio Render
-
-Render free si addormenta dopo 15 min. Per evitarlo:
-
-1. Vai su [uptimerobot.com](https://uptimerobot.com) → Sign up
-2. **Add New Monitor**:
-   - Monitor Type: HTTP(s)
-   - Friendly Name: Drops API
-   - URL: `https://il-tuo-url.onrender.com/health`
-   - Monitoring Interval: **Every 5 minutes**
-3. Salva. Fine — il backend resterà sempre sveglio.
-
----
-
-## Condividi con gli amici
-
-Manda il link Netlify + la password:
-
-> 🎵 **Drops** — https://il-tuo-sito.netlify.app
-> Password: `culo`
-
----
-
-## Aggiornare yt-dlp (importante)
-
-YouTube cambia le sue API regolarmente. Se smette di funzionare, aggiorna yt-dlp in `requirements.txt`:
-
-```
-yt-dlp==ULTIMA_VERSIONE
+```bash
+export APPLE_SIGNING_IDENTITY="Developer ID Application: NOME (TEAM_ID)"
+export DROPS_NOTARY_PROFILE="drops-notary"
+./build-dmg.sh
 ```
 
-Controlla la versione più recente su: https://github.com/yt-dlp/yt-dlp/releases
+Firma e notarizzazione pubblica richiedono Apple Developer Program.
 
-Poi fai commit → push → Render si ribuilderà automaticamente.
+## Windows
 
----
+Build Windows avviabile manualmente da GitHub Actions. Installer resta artifact
+interno finché test Windows 10/11 non passa.
 
-## Cambiare la password
+Vedi:
 
-Nel dashboard Render → **Environment** → modifica `APP_PASSWORD` → **Save Changes**.
-Il servizio si riavvia automaticamente con la nuova password.
+- `docs/WINDOWS_BUILD.md`;
+- `docs/RELEASE.md`;
+- `docs/DISTRIBUTION.md`;
+- `docs/INSTALLAZIONE_MACOS.md`.
 
----
+## Dati locali
 
-## Qualità disponibili
+Configurazione e log:
 
-| Selezione | Formato | Note |
-|-----------|---------|------|
-| 128k | MP3 | Leggero, streaming quality |
-| 192k | MP3 | Buona qualità |
-| 320k | MP3 VBR | Default — qualità massima |
-| FLAC | FLAC | Lossless, file grandi (~30MB/brano) |
+```text
+~/.drops/
+~/.drops/logs/backend.log
+```
 
----
+Download predefiniti:
 
-## Troubleshooting
-
-**Il sito dà errore di connessione al primo utilizzo** → Render sta facendo il cold start (30s). Aspetta e riprova.
-
-**"URL non supportato"** → Funziona con YouTube, YouTube Music, SoundCloud. Non Spotify (streaming protetto).
-
-**Il download si blocca** → yt-dlp potrebbe essere outdated. Aggiorna come descritto sopra.
+```text
+~/Downloads
+```

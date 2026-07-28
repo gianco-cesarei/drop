@@ -40,6 +40,23 @@ backend/cookies.txt
 *.log
 logs/
 
+# Materiali privati e output di lavoro
+output/
+tmp/
+graphify-out/
+*.pdf
+*.docx
+.claude/
+AGENTS.md
+CLAUDE.md
+HANDOFF_*.md
+profilo_musicale.md
+lyrics-traduzione.html
+skills/
+assets/*.html
+assets/icona/*preview*
+assets/icona/*debug*
+
 # Editor
 .vscode/
 .idea/

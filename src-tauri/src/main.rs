@@ -9,7 +9,7 @@ use std::time::Duration;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri::Manager;
 
-/// Aspetta che il backend risponda sulla porta 8000 (max ~18s).
+/// Aspetta che il backend risponda sulla porta 8000.
 fn wait_for_backend(attempts: u32) {
     for _ in 0..attempts {
         if TcpStream::connect("127.0.0.1:8000").is_ok() {
@@ -40,6 +40,7 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
         match Command::new(&backend)
             .env("DROPS_FFMPEG_DIR", &ffmpeg_dir)
             .env("DROPS_PARENT_PID", std::process::id().to_string())
+            .env("DROPS_APP_VERSION", env!("CARGO_PKG_VERSION"))
             .current_dir(&res)
             .spawn()
         {
@@ -62,10 +63,8 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
                 // lo riforziamo prima di lanciarle.
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    let _ = std::fs::set_permissions(
-                        &backend,
-                        std::fs::Permissions::from_mode(0o755),
-                    );
+                    let _ =
+                        std::fs::set_permissions(&backend, std::fs::Permissions::from_mode(0o755));
                     let _ = std::fs::set_permissions(
                         ffmpeg_dir.join("ffmpeg"),
                         std::fs::Permissions::from_mode(0o755),
@@ -74,6 +73,7 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
                 return Command::new(&backend)
                     .env("DROPS_FFMPEG_DIR", &ffmpeg_dir)
                     .env("DROPS_PARENT_PID", std::process::id().to_string())
+                    .env("DROPS_APP_VERSION", env!("CARGO_PKG_VERSION"))
                     .current_dir(&res)
                     .spawn()
                     .ok();
@@ -88,8 +88,15 @@ fn spawn_backend(app: &tauri::App) -> Option<Child> {
         let backend_dir = project_dir.join("backend");
         Command::new(&python)
             .env("DROPS_PARENT_PID", std::process::id().to_string())
+            .env("DROPS_APP_VERSION", env!("CARGO_PKG_VERSION"))
             .args([
-                "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000",
+                "-m",
+                "uvicorn",
+                "main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8000",
             ])
             .current_dir(&backend_dir)
             .spawn()
@@ -118,7 +125,8 @@ fn main() {
             let child = spawn_backend(app);
             if child.is_some() {
                 // Attende che uvicorn sia pronto prima di caricare la WebView
-                wait_for_backend(60);
+                // PyInstaller onefile può impiegare 15-20 secondi al primo avvio.
+                wait_for_backend(120);
             }
             *backend.lock().unwrap() = child;
 

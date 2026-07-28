@@ -25,20 +25,19 @@ Apri una build locale solo se sai chi l’ha compilata e hai verificato la sua
 provenienza:
 
 1. Sposta `Drops.app` in `Applicazioni`.
-2. Nel Finder, fai click destro su `Drops.app`.
-3. Seleziona `Apri`.
-4. Conferma `Apri`.
+2. Verifica che la copia sia presente in `Applicazioni`.
+3. Espelli il DMG.
+4. Prova ad aprire Drops da `Applicazioni` una volta.
+5. Apri `Impostazioni di Sistema`.
+6. Vai in `Privacy e sicurezza`.
+7. Cerca il messaggio relativo a Drops.
+8. Se la provenienza è verificata, premi `Apri comunque`.
+9. Conferma con password o Touch ID, poi premi `Apri`.
 
-Se il pulsante non compare:
-
-1. Prova ad aprire Drops una volta.
-2. Apri `Impostazioni di Sistema`.
-3. Vai in `Privacy e sicurezza`.
-4. Cerca messaggio relativo a Drops.
-5. Se la provenienza è verificata, premi `Apri comunque`.
-6. Conferma con password o Touch ID.
+Se Drops non parte, verifica prima che non sia ancora aperto dal DMG. Non
+modificare altre protezioni di macOS: conserva messaggio mostrato e segnala
+versione macOS.
 
 Non disattivare Gatekeeper. Non usare comandi globali come
 `spctl --master-disable`. Non rimuovere attributi di quarantena da cartelle
 generiche.
-

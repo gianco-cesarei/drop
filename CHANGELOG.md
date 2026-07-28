@@ -4,13 +4,24 @@
 
 ## [Unreleased]
 
-- Aggiunta roadmap unificata `docs/PRODUCT_ROADMAP.md`: V1 copre
-  distribuzione, libreria locale, player e strumenti DJ; V2 copre account
-  esterni e analytics. Roadmap v2 precedente resta approfondimento tecnico.
-- Rebranding v1.3: accento arancione sostituito dal verde `#22C55E`, già
+- Versione corrente impostata a `1.0.5` come build privata di verifica. Se
+  supera checklist macOS diventerà `1.1.0`, prima Release stabile ufficiale.
+- Corretto controllo aggiornamenti: backend riceve sempre versione reale Tauri,
+  stato aggiornato appare grigio come `Aggiornata · vX.Y.Z`, mentre nuova
+  Release attiva banner verde e pulsante che apre la pagina GitHub corretta.
+  Le Release precedenti al riavvio della numerazione vengono ignorate, evitando
+  il falso aggiornamento da `1.0.5` alla vecchia `1.3.1`.
+- Rifatte guide installazione come due PDF separati: “Drops per Windows”
+  e “Drops per macOS”. Indicano asset esatti della Release, escludono download
+  di repository/source code e documentano SmartScreen, Gatekeeper e permessi
+  macOS per cartelle e volumi rimovibili.
+- Roadmap rinumerata: `1.1.x` copre distribuzione, playlist, libreria locale,
+  player e strumenti DJ; `1.2.x` copre account esterni e analytics.
+- Rebranding: accento arancione sostituito dal verde `#22C55E`, già
   coerente con guida Windows.
 - Nuova icona Drops v3: goccia verde su fondo nero e onda sonora costruita su
-  assi esatti `x=512`, `y=512`; generate varianti macOS, Windows e PNG.
+  assi esatti `x=512`, `y=512`; simbolo ridotto al 88% per bilanciare lo spazio;
+  generate varianti macOS, Windows e PNG.
 - Nuova coda multi-link: fino a 100 elementi, con 3 download simultanei.
 - Salvataggio diretto in `Download`; selettore nativo permette cartella
   alternativa senza obbligare utente a sceglierla.
@@ -26,12 +37,14 @@
   viene configurato.
 - Build macOS: supporto firma `Developer ID Application`, notarizzazione tramite
   profilo `notarytool`, stapling e verifica Gatekeeper in `build-dmg.sh`.
+- Build privata `1.0.5` installata e verificata su Apple Silicon: avvio,
+  SoundCloud MP3, YouTube MP3, clip video MP4, arresto backend e updater.
 - Rimossa firma ad-hoc forzata da `tauri.macos.conf.json`; build locale resta
   possibile, release pubblica usa identità Apple da ambiente.
 - Aggiunta guida sicura `docs/INSTALLAZIONE_MACOS.md`; nessuna disattivazione
   Gatekeeper o rimozione automatica quarantena.
 - Aggiunto `INSTALLAZIONE_DROPS_MAC.txt`; build locale e Release GitHub lo
-  pubblicano accanto al DMG per spiegare click destro → Apri.
+  pubblicano accanto al DMG con procedura diretta da Privacy e sicurezza.
 
 ---
 

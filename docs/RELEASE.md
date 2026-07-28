@@ -1,63 +1,74 @@
-# Pubblicare una release di Drops (Windows)
+# Pubblicare una Release di Drops
 
-Riferimento rapido. La logica completa è nell'agente `.claude/agents/drops-release.md`
-(chiedi in chat "pubblica la release vX.Y.Z" e parte lui).
+macOS è piattaforma supportata. Windows resta sperimentale e viene compilato
+solo avviando manualmente workflow GitHub Actions.
 
-## Regola d'oro
-Il tag deve puntare al commit con le modifiche. Ordine tassativo:
-**modifica → commit → push del commit → poi crea il tag → push del tag.**
-Mai taggare un commit vecchio: la Release non verrebbe creata.
+## Gate obbligatori
 
-## Passi
+Prima di creare tag:
 
-1. Porta la versione a `X.Y.Z` (stessa del tag `vX.Y.Z`) in:
-   `src-tauri/tauri.conf.json`, `package.json`, `src-tauri/Cargo.toml`.
-   Aggiorna `CHANGELOG.md`.
+1. versione sincronizzata in `package.json`, `package-lock.json`,
+   `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, lockfile e backend;
+2. build DMG completata;
+3. test installazione da DMG;
+4. download YouTube e SoundCloud;
+5. cartella scelta, coda e clip video;
+6. controllo aggiornamenti;
+7. firma e notarizzazione per Release pubblica.
 
-2. Commit + push:
-   ```bash
-   cd ~/Documents/Claude/Projects/mp3-downloader
-   find .git -name '*.lock' -delete
-   git add -A
-   git commit -m "Release vX.Y.Z"
-   git log --oneline -1        # deve mostrare l'hash NUOVO
-   git push
-   ```
+Build `1.0.5` è privata. Diventa `1.1.0` solo dopo superamento gate.
 
-3. Tag sul commit nuovo + push (scatena build e Release):
-   ```bash
-   git push origin :refs/tags/vX.Y.Z 2>/dev/null; git tag -d vX.Y.Z 2>/dev/null
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
+## Ordine Release
 
-4. Su **Actions** verifica che il run mostri il commit giusto e diventi verde.
+Tag deve puntare al commit con modifiche:
 
-5. Su **Releases** compare `Drops vX.Y.Z` con `Drops_X.Y.Z_x64-setup.exe`.
-   Il link è pubblico: condivisibile con chiunque, senza account GitHub.
+```text
+modifica → test → bump stabile → commit → push commit → tag → push tag
+```
 
-## Se la Release non compare
-Run verde ma niente Release → apri lo step "Publish GitHub Release" nei log.
-Di solito: tag su commit sbagliato (rifai 2-3) o permessi token
-(`permissions: contents: write` nel workflow + Settings → Actions → General
-con permessi di scrittura ai workflow).
+Mai taggare commit vecchio.
 
-## Note
-- Artifact di Actions = solo per te (loggato). Per gli utenti esterni serve la Release.
-- App non firmata → SmartScreen al primo avvio ("Ulteriori informazioni" → "Esegui comunque").
+```bash
+git add -A
+git commit -m "Release vX.Y.Z"
+git push origin main
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
 
-## macOS (.dmg)
-Lo stesso tag `vX.Y.Z` costruisce anche il `.dmg` Mac (job `build-macos`, runner
-Apple Silicon `macos-14`: app arm64 nativa) e lo allega alla stessa Release.
-Una release pubblica deve essere firmata con `Developer ID Application` e
-notarizzata. `build-dmg.sh` gestisce firma, invio con `notarytool`, applicazione
-ticket e verifica Gatekeeper quando sono configurati `APPLE_SIGNING_IDENTITY` e
-`DROPS_NOTARY_PROFILE`.
+Push tag avvia job macOS e pubblica:
 
-Una build locale non notarizzata può essere aperta, dopo averne verificato la
-provenienza, con **tasto destro → Apri** oppure da
-**Impostazioni di Sistema → Privacy e sicurezza → Apri comunque**.
-Non disattivare Gatekeeper e non rimuovere automaticamente la quarantena.
+- `Drops-vX.Y.Z-macOS.dmg`;
+- `LEGGIMI-Installazione-Drops-Mac.txt`.
 
-Vedi `docs/DISTRIBUTION.md` e `docs/INSTALLAZIONE_MACOS.md`.
-- ffmpeg per Mac: build statica arm64 dal pacchetto npm `ffmpeg-static`.
+Artifact Actions è interno. Utenti scaricano DMG dalla Release.
+
+## Windows
+
+Job Windows:
+
+- parte solo con `workflow_dispatch`;
+- produce artifact interno;
+- non allega EXE alla Release pubblica;
+- non implica supporto ufficiale.
+
+Pubblicazione Windows richiede test reali Windows 10 e 11.
+
+## macOS
+
+Release pubblica deve usare `Developer ID Application`, notarizzazione Apple e
+ticket applicato. `build-dmg.sh` usa:
+
+- `APPLE_SIGNING_IDENTITY`;
+- `DROPS_NOTARY_PROFILE`.
+
+Build privata non notarizzata può richiedere:
+
+`Impostazioni di Sistema → Privacy e sicurezza → Apri comunque`
+
+Non disattivare Gatekeeper. Non rimuovere automaticamente quarantena.
+
+Vedi:
+
+- `docs/DISTRIBUTION.md`;
+- `docs/INSTALLAZIONE_MACOS.md`.

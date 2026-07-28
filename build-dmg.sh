@@ -84,62 +84,88 @@ deactivate
 echo "📦 Installando dipendenze npm..."
 npm install
 
-# Build DMG
+# Build app
 echo "🏗  Compilando app (ci vuole qualche minuto la prima volta)..."
-# Tauri ricopia risorse sopra output precedente; ffmpeg può conservare modo 555.
-find src-tauri/target/release -path "*/ffmpeg/ffmpeg" -exec chmod u+w {} \; 2>/dev/null || true
-npm run tauri build
+# Tauri ricopia risorse sopra output precedenti; ffmpeg può conservare modo 555
+# sia nei profili debug sia release e bloccare build successive.
+find src-tauri/target -path "*/ffmpeg/ffmpeg" -exec chmod u+w {} \; 2>/dev/null || true
+npm run tauri build -- --bundles app
 
-# Trova artefatti prodotti
+# Trova app prodotta
 APP=$(find src-tauri/target/release/bundle/macos -name "*.app" -type d -print -quit 2>/dev/null)
-DMG=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" -type f -print -quit 2>/dev/null)
 
 if [ -z "$APP" ]; then
   echo "❌ Drops.app non trovata dopo la build."
   exit 1
 fi
 
+# Firma componenti annidati e bundle completo prima di creare il DMG.
 if [ -n "$SIGNING_IDENTITY" ]; then
-  echo "🔎 Verifica firma applicazione..."
-  codesign --verify --deep --strict --verbose=2 "$APP"
-  codesign -dv --verbose=2 "$APP" 2>&1 | grep -E "Authority=|TeamIdentifier="
-fi
-
-if [ -n "$DMG" ]; then
-  GUIDE="$(dirname "$DMG")/INSTALLAZIONE_DROPS_MAC.txt"
-  cp "INSTALLAZIONE_DROPS_MAC.txt" "$GUIDE"
-
-  if [ -n "$NOTARY_PROFILE" ]; then
-    echo "📨 Invio DMG ad Apple per notarizzazione..."
-    xcrun notarytool submit "$DMG" \
-      --keychain-profile "$NOTARY_PROFILE" \
-      --wait
-
-    echo "📎 Applico ticket notarizzazione al DMG..."
-    xcrun stapler staple "$DMG"
-    xcrun stapler validate "$DMG"
-
-    echo "🛡  Verifica finale Gatekeeper..."
-    spctl --assess \
-      --type open \
-      --context context:primary-signature \
-      --verbose=4 \
-      "$DMG"
-  elif [ -n "$SIGNING_IDENTITY" ]; then
-    echo "⚠️  App firmata ma DMG non notarizzato."
-    echo "   Configura DROPS_NOTARY_PROFILE per distribuzione pubblica."
-  fi
-
-  echo ""
-  echo "✅ DMG pronto: $DMG"
-  echo "✅ Guida pronta: $GUIDE"
-  if [ -n "$NOTARY_PROFILE" ]; then
-    echo "✅ Firma e notarizzazione verificate. Gatekeeper dovrebbe aprirlo normalmente."
-  else
-    echo "ℹ️  Build locale/test. Segui docs/INSTALLAZIONE_MACOS.md."
-  fi
-  open "$(dirname "$DMG")"
+  SIGN_ARGS=(--force --options runtime --timestamp --sign "$SIGNING_IDENTITY")
 else
-  echo "❌ DMG non trovato. Controlla gli errori sopra."
-  exit 1
+  SIGN_ARGS=(--force --timestamp=none --sign -)
 fi
+
+echo "🔏 Firma componenti e bundle..."
+codesign "${SIGN_ARGS[@]}" "$APP/Contents/Resources/drops-backend"
+codesign "${SIGN_ARGS[@]}" "$APP/Contents/Resources/ffmpeg/ffmpeg"
+codesign "${SIGN_ARGS[@]}" "$APP/Contents/MacOS/drops"
+codesign "${SIGN_ARGS[@]}" "$APP"
+
+echo "🔎 Verifica firma applicazione..."
+codesign --verify --deep --strict --verbose=2 "$APP"
+codesign -dv --verbose=2 "$APP" 2>&1 | grep -E "Identifier=|Signature=|Authority=|TeamIdentifier="
+
+# Crea DMG solo dopo firma bundle.
+VERSION=$(node -p "require('./package.json').version")
+DMG_DIR="src-tauri/target/release/bundle/dmg"
+DMG="$DMG_DIR/Drops_${VERSION}_aarch64.dmg"
+STAGING=$(mktemp -d)
+trap 'rm -rf "$STAGING"' EXIT
+mkdir -p "$DMG_DIR" "$STAGING/Drops"
+cp -R "$APP" "$STAGING/Drops/"
+ln -s /Applications "$STAGING/Drops/Applications"
+
+echo "💿 Creo DMG..."
+hdiutil create -volname "Drops" -srcfolder "$STAGING/Drops" -ov -format UDZO "$DMG"
+hdiutil verify "$DMG"
+
+if [ -n "$SIGNING_IDENTITY" ]; then
+  echo "🔏 Firma DMG..."
+  codesign --force --timestamp --sign "$SIGNING_IDENTITY" "$DMG"
+  codesign --verify --verbose=2 "$DMG"
+fi
+
+GUIDE="$(dirname "$DMG")/INSTALLAZIONE_DROPS_MAC.txt"
+cp "INSTALLAZIONE_DROPS_MAC.txt" "$GUIDE"
+
+if [ -n "$NOTARY_PROFILE" ]; then
+  echo "📨 Invio DMG ad Apple per notarizzazione..."
+  xcrun notarytool submit "$DMG" \
+    --keychain-profile "$NOTARY_PROFILE" \
+    --wait
+
+  echo "📎 Applico ticket notarizzazione al DMG..."
+  xcrun stapler staple "$DMG"
+  xcrun stapler validate "$DMG"
+
+  echo "🛡  Verifica finale Gatekeeper..."
+  spctl --assess \
+    --type open \
+    --context context:primary-signature \
+    --verbose=4 \
+    "$DMG"
+elif [ -n "$SIGNING_IDENTITY" ]; then
+  echo "⚠️  App firmata ma DMG non notarizzato."
+  echo "   Configura DROPS_NOTARY_PROFILE per distribuzione pubblica."
+fi
+
+echo ""
+echo "✅ DMG pronto: $DMG"
+echo "✅ Guida pronta: $GUIDE"
+if [ -n "$NOTARY_PROFILE" ]; then
+  echo "✅ Firma e notarizzazione verificate. Gatekeeper dovrebbe aprirlo normalmente."
+else
+  echo "ℹ️  Build locale/test. Segui docs/INSTALLAZIONE_MACOS.md."
+fi
+open "$(dirname "$DMG")"

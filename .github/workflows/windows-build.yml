@@ -1,4 +1,4 @@
-name: Build Drops (Windows + macOS)
+name: Build Drops
 
 on:
   workflow_dispatch: {}
@@ -8,9 +8,11 @@ on:
 
 jobs:
   build-windows:
+    # Windows resta sperimentale: parte solo manualmente e non pubblica Release.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     permissions:
-      contents: write   # necessario per creare la Release pubblica
+      contents: read
 
     steps:
       - name: Checkout
@@ -166,23 +168,10 @@ jobs:
           path: Drops-${{ github.ref_name }}-Windows.exe
           if-no-files-found: error
 
-      # ─── Release pubblica (solo sui tag v*) ─────────────────────────────────
-      # Il link di download e pubblico: chiunque scarica l'.exe senza account.
-      - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: Drops ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: Drops-${{ github.ref_name }}-Windows.exe
-
   # ══════════════════════════════════════════════════════════════════════════
   # Build macOS (.dmg) — runner Apple Silicon (macos-14): app arm64 NATIVA
-  # (niente Rosetta). Firmata ad-hoc (gratis, non notarizzata): al primo avvio
-  # l'utente apre con tasto destro → Apri (Gatekeeper).
+  # (niente Rosetta). Con Developer ID viene firmata/notarizzata; fallback
+  # ad-hoc destinato esclusivamente a build private di verifica.
   # ══════════════════════════════════════════════════════════════════════════
   build-macos:
     runs-on: macos-14
@@ -243,6 +232,42 @@ jobs:
           if [ "$h" != "200" ]; then echo "FAIL: /health != 200"; exit 1; fi
           echo "OK: UI e /health a posto su macOS reale."
 
+      # Download reale (gate): valida yt-dlp + ffmpeg arm64 sul backend Mach-O.
+      # Stessa fonte SoundCloud del job Windows. Se fallisce, la build si ferma.
+      - name: Download reale MP3 (gate)
+        run: |
+          export DROPS_FFMPEG_DIR="$PWD/src-tauri/binaries"
+          DL="$(mktemp -d)"
+          export DROPS_DOWNLOAD_DIR="$DL"
+          export DROPS_PORT=8001
+          "src-tauri/binaries/ffmpeg" -version | head -1
+          ./src-tauri/binaries/drops-backend &
+          PID=$!
+          up=0
+          for i in $(seq 1 30); do
+            sleep 1
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:8001/health" || true)
+            if [ "$code" = "200" ]; then up=1; break; fi
+          done
+          if [ "$up" != "1" ]; then echo "Backend non avviato"; kill $PID 2>/dev/null || true; exit 1; fi
+          body='{"url":"https://soundcloud.com/nasa/small-steps-giant-793608487","quality":"320","format":"audio"}'
+          job=$(curl -s -X POST "http://127.0.0.1:8001/download" -H "Content-Type: application/json" -d "$body" | python3 -c "import sys,json;print(json.load(sys.stdin).get('job_id',''))")
+          echo "Job avviato: $job"
+          st=""
+          for i in $(seq 1 90); do
+            sleep 2
+            st=$(curl -s "http://127.0.0.1:8001/status/$job" | python3 -c "import sys,json;print(json.load(sys.stdin).get('status',''))")
+            if [ "$st" = "ready" ] || [ "$st" = "error" ]; then break; fi
+          done
+          echo "Stato finale: $st"
+          if [ "$st" != "ready" ]; then kill $PID 2>/dev/null || true; echo "Download non completato"; exit 1; fi
+          curl -s "http://127.0.0.1:8001/file/$job" -o "$DL/out.mp3"
+          size=$(stat -f%z "$DL/out.mp3")
+          kill $PID 2>/dev/null || true
+          echo "MP3 scaricato: $size byte"
+          if [ "$size" -lt 10000 ]; then echo "File troppo piccolo: download fallito"; exit 1; fi
+          echo "OK: pipeline di download MP3 funzionante su macOS reale."
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -268,14 +293,21 @@ jobs:
       - name: Build Tauri app (.app)
         run: npm run tauri build -- --bundles app
 
-      # Firma ad-hoc (gratis) se non c'è un'identità Apple: evita che Gatekeeper
-      # uccida il backend interno. Se in futuro imposti APPLE_SIGNING_IDENTITY,
-      # ci pensa Tauri in fase di build e questo passo viene saltato.
-      - name: Firma ad-hoc dell'app (fallback)
+      # Firma sempre componenti annidati e bundle completo prima del DMG.
+      # Developer ID usa hardened runtime; build privata usa firma ad-hoc.
+      - name: Firma e verifica app
         run: |
-          if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
-            codesign --force --deep --sign - "src-tauri/target/release/bundle/macos/Drops.app"
+          APP="src-tauri/target/release/bundle/macos/Drops.app"
+          if [ -n "${APPLE_SIGNING_IDENTITY:-}" ]; then
+            SIGN_ARGS=(--force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY")
+          else
+            SIGN_ARGS=(--force --timestamp=none --sign -)
           fi
+          codesign "${SIGN_ARGS[@]}" "$APP/Contents/Resources/drops-backend"
+          codesign "${SIGN_ARGS[@]}" "$APP/Contents/Resources/ffmpeg/ffmpeg"
+          codesign "${SIGN_ARGS[@]}" "$APP/Contents/MacOS/drops"
+          codesign "${SIGN_ARGS[@]}" "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
 
       # DMG creato con hdiutil (nativo, niente AppleScript): sempre affidabile.
       - name: Crea DMG (hdiutil)

@@ -87,9 +87,12 @@ DEFAULT_SAVE_DIR.mkdir(parents=True, exist_ok=True)
 MAX_CONCURRENT = 3
 MAX_QUEUED = 100
 FILE_TTL = 600  # 10 minuti
-APP_VERSION = os.environ.get("DROPS_APP_VERSION", "1.3.0")
+APP_VERSION = os.environ.get("DROPS_APP_VERSION", "1.0.5")
 GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/gianco-cesarei/drop/releases/latest"
 UPDATE_CACHE_SECONDS = 3600
+# Version history restarted at 1.0.x. Releases published before this instant belong
+# to the retired numbering (1.1.0–1.3.1) and must not trigger false updates.
+RELEASE_LINEAGE_START = "2026-07-28T00:00:00Z"
 
 # ─── App ────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Drops API")
@@ -258,6 +261,16 @@ def check_latest_release() -> dict:
     try:
         with urllib.request.urlopen(request, timeout=5) as response:
             release = json.load(response)
+        if str(release.get("published_at") or "") < RELEASE_LINEAGE_START:
+            result = {
+                "current_version": APP_VERSION,
+                "latest_version": APP_VERSION,
+                "available": False,
+                "release_url": None,
+                "notes": "",
+            }
+            update_cache.update({"checked_at": now, "result": result})
+            return result
         latest = str(release["tag_name"]).lstrip("v")
         result = {
             "current_version": APP_VERSION,
@@ -278,6 +291,20 @@ def check_latest_release() -> dict:
 
     update_cache.update({"checked_at": now, "result": result})
     return result
+
+
+def open_release_page(url: str) -> None:
+    """Apre esclusivamente una pagina Release del repository ufficiale."""
+    expected_prefix = "https://github.com/gianco-cesarei/drop/releases/"
+    if not url.startswith(expected_prefix):
+        raise ValueError("URL aggiornamento non valido")
+
+    if sys.platform == "darwin":
+        subprocess.Popen(["open", url])
+    elif os.name == "nt":
+        os.startfile(url)  # type: ignore[attr-defined]
+    else:
+        subprocess.Popen(["xdg-open", url])
 
 
 def ffmpeg_bin() -> str:
@@ -568,6 +595,18 @@ def app_info():
 @app.get("/update/check")
 def update_check():
     return check_latest_release()
+
+
+@app.post("/update/open")
+def update_open():
+    release = check_latest_release()
+    if not release.get("available") or not release.get("release_url"):
+        raise HTTPException(status_code=409, detail="Nessun aggiornamento disponibile")
+    try:
+        open_release_page(release["release_url"])
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=500, detail=f"Impossibile aprire aggiornamento: {exc}") from exc
+    return {"opened": True, "release_url": release["release_url"]}
 
 
 @app.get("/auth-token")
