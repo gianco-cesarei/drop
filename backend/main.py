@@ -88,7 +88,7 @@ MAX_CONCURRENT = 3
 MAX_QUEUED = 100
 FILE_TTL = 600  # 10 minuti
 APP_VERSION = os.environ.get("DROPS_APP_VERSION", "1.0.5")
-GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/gianco-cesarei/drop/releases/latest"
+GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/gianco-cesarei/drops/releases/latest"
 UPDATE_CACHE_SECONDS = 3600
 # Version history restarted at 1.0.x. Releases published before this instant belong
 # to the retired numbering (1.1.0–1.3.1) and must not trigger false updates.
@@ -295,7 +295,7 @@ def check_latest_release() -> dict:
 
 def open_release_page(url: str) -> None:
     """Apre esclusivamente una pagina Release del repository ufficiale."""
-    expected_prefix = "https://github.com/gianco-cesarei/drop/releases/"
+    expected_prefix = "https://github.com/gianco-cesarei/drops/releases/"
     if not url.startswith(expected_prefix):
         raise ValueError("URL aggiornamento non valido")
 
