@@ -1,7 +1,17 @@
 name: Build Drops
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Piattaforma da compilare"
+        required: true
+        default: "windows"
+        type: choice
+        options:
+          - windows
+          - macos
+          - all
   push:
     tags:
       - "v*"
@@ -9,7 +19,9 @@ on:
 jobs:
   build-windows:
     # Windows resta sperimentale: parte solo manualmente e non pubblica Release.
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (inputs.platform == 'windows' || inputs.platform == 'all')
     runs-on: windows-latest
     permissions:
       contents: read
@@ -174,6 +186,10 @@ jobs:
   # ad-hoc destinato esclusivamente a build private di verifica.
   # ══════════════════════════════════════════════════════════════════════════
   build-macos:
+    if: >-
+      github.event_name == 'push' ||
+      inputs.platform == 'macos' ||
+      inputs.platform == 'all'
     runs-on: macos-14
     permissions:
       contents: write

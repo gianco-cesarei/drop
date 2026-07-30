@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Windows: selettore cartella avvia PowerShell con `CREATE_NO_WINDOW`; resta
+  visibile solo dialog nativo, senza finestra console nera temporanea.
 - Versione corrente impostata a `1.0.5` come build privata di verifica. Se
   supera checklist macOS diventerà `1.1.0`, prima Release stabile ufficiale.
 - Corretto controllo aggiornamenti: backend riceve sempre versione reale Tauri,

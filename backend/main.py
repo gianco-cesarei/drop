@@ -207,9 +207,12 @@ def choose_destination_folder() -> Path | None:
             "{ Write-Output $dialog.SelectedPath }"
         )
         result = subprocess.run(
-            ["powershell", "-NoProfile", "-STA", "-Command", script],
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-STA", "-Command", script],
             capture_output=True,
             text=True,
+            # Backend PyInstaller è windowed, ma PowerShell può comunque creare
+            # una console temporanea. Mantiene visibile solo FolderBrowserDialog.
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if result.returncode != 0:
             return None
